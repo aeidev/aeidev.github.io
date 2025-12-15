@@ -2,614 +2,654 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cat Tic-Tac-Toe</title>
-    
-    <!-- Load React and ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Load Babel for JSX support -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Load Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Purr-fect Tic-Tac-Toe</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Custom Animations needed for the game */
-        @keyframes bounce-short {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            overflow: hidden; /* Prevent scrolling during play */
+            touch-action: manipulation; /* Improve touch response */
         }
-        @keyframes pop-in {
-          0% { transform: scale(0.5); opacity: 0; }
-          70% { transform: scale(1.2); }
-          100% { transform: scale(1); opacity: 1; }
+
+        /* --- Animations --- */
+
+        /* Pop In for Icons */
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+            80% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
-        @keyframes fade-in {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
+
+        .game-icon {
+            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
         }
-        @keyframes scratch {
-          from { stroke-dashoffset: 200; }
-          to { stroke-dashoffset: 0; }
+
+        /* Jagged Scratch Animation */
+        .scratch-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 50;
+            overflow: visible;
         }
-        .animate-bounce-short {
-          animation: bounce-short 0.4s ease-out;
+
+        .scratch-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: scratchDraw 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            stroke: #1a1a1a; /* Dark Charcoal/Black */
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            opacity: 0.9;
+            filter: drop-shadow(1px 1px 1px rgba(255,255,255,0.4)); /* Slight highlight for depth */
         }
-        .animate-pop-in {
-          animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+        @keyframes scratchDraw {
+            to { stroke-dashoffset: 0; }
         }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out forwards;
+
+        /* Modal Backdrop Blur */
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
         }
-        .animate-scratch {
-          stroke-dasharray: 200;
-          stroke-dashoffset: 200;
-          animation: scratch 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+
+        /* Theme Gradients */
+        .theme-orange { background: linear-gradient(135deg, #fceabb 0%, #f8b500 100%); }
+        .theme-void { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); color: white; }
+        .theme-calico { background: linear-gradient(135deg, #ffffff 0%, #dcdcdc 50%, #dba469 100%); }
+        .theme-siamese { background: linear-gradient(135deg, #e6d0b3 0%, #6f4e37 100%); color: #3e2723; }
+        .theme-forest { background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); color: #1b5e20; }
+
+        .cell {
+            transition: all 0.2s;
         }
-        .cursor-wait {
-            cursor: wait;
+        .cell:active {
+            transform: scale(0.95);
+        }
+
+        /* Color Picker Styles */
+        .color-btn.selected {
+            transform: scale(1.2);
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px currentColor;
+        }
+        .icon-btn.selected {
+            background-color: rgba(0,0,0,0.1);
+            transform: scale(1.1);
         }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="h-screen w-screen flex flex-col items-center justify-center select-none transition-colors duration-500 theme-orange" id="app-body">
 
-    <script type="text/babel">
-        const { useState, useEffect, useCallback } = React;
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="w-full max-w-lg p-6 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col gap-5 m-4 animate-fade-in text-gray-800 h-[90vh] overflow-y-auto">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold mb-1"><i class="fas fa-cat mr-2"></i>Cat Tac Toe</h1>
+            <p class="text-xs opacity-75">Customize your cats!</p>
+        </div>
 
-        // --- ICONS (Completely Redesigned) ---
+        <!-- Mode Selection -->
+        <div class="flex bg-gray-200 p-1 rounded-xl shrink-0">
+            <button onclick="setMode('pvp')" id="btn-pvp" class="flex-1 py-2 rounded-lg font-bold bg-white shadow-sm transition-all text-sm">Vs Friend</button>
+            <button onclick="setMode('ai')" id="btn-ai" class="flex-1 py-2 rounded-lg font-bold text-gray-500 transition-all text-sm">Vs CatBot</button>
+        </div>
+
+        <!-- PLAYER 1 CUSTOMIZATION -->
+        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-blue-800">Player 1</label>
+                <div class="text-xl text-blue-600" id="p1-preview"><i class="fas fa-cat"></i></div>
+            </div>
+            <input type="text" id="p1-name" value="You" class="w-full bg-white border border-blue-200 rounded-lg px-3 py-1 mb-3 text-sm focus:ring-2 focus:ring-blue-400 outline-none" placeholder="Name">
+            
+            <!-- P1 Controls -->
+            <div class="flex gap-4">
+                <!-- Color Picker -->
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="updatePlayerConfig(1, 'color', 'text-blue-600')" class="w-6 h-6 rounded-full bg-blue-600 color-btn selected p1-color" data-color="text-blue-600"></button>
+                    <button onclick="updatePlayerConfig(1, 'color', 'text-orange-500')" class="w-6 h-6 rounded-full bg-orange-500 color-btn p1-color" data-color="text-orange-500"></button>
+                    <button onclick="updatePlayerConfig(1, 'color', 'text-purple-600')" class="w-6 h-6 rounded-full bg-purple-600 color-btn p1-color" data-color="text-purple-600"></button>
+                    <button onclick="updatePlayerConfig(1, 'color', 'text-gray-800')" class="w-6 h-6 rounded-full bg-gray-800 color-btn p1-color" data-color="text-gray-800"></button>
+                </div>
+                <!-- Icon Picker -->
+                <div class="flex gap-2 ml-auto">
+                    <button onclick="updatePlayerConfig(1, 'icon', 'fa-cat')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn selected p1-icon" data-icon="fa-cat"><i class="fas fa-cat"></i></button>
+                    <button onclick="updatePlayerConfig(1, 'icon', 'fa-paw')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn p1-icon" data-icon="fa-paw"><i class="fas fa-paw"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PLAYER 2 CUSTOMIZATION -->
+        <div class="bg-red-50/50 p-4 rounded-xl border border-red-100">
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-red-800" id="p2-label">Player 2</label>
+                <div class="text-xl text-red-500 transform -scale-x-100" id="p2-preview"><i class="fas fa-cat"></i></div>
+            </div>
+            
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="p2-name" value="Opponent" class="flex-1 bg-white border border-red-200 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-red-400 outline-none" placeholder="Name">
+                 <select id="ai-difficulty" class="hidden bg-white border border-red-200 rounded-lg px-2 text-xs font-bold focus:ring-2 focus:ring-red-400 outline-none">
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Med</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+
+            <!-- P2 Controls -->
+            <div class="flex gap-4">
+                <!-- Color Picker -->
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="updatePlayerConfig(2, 'color', 'text-red-500')" class="w-6 h-6 rounded-full bg-red-500 color-btn selected p2-color" data-color="text-red-500"></button>
+                    <button onclick="updatePlayerConfig(2, 'color', 'text-green-600')" class="w-6 h-6 rounded-full bg-green-600 color-btn p2-color" data-color="text-green-600"></button>
+                    <button onclick="updatePlayerConfig(2, 'color', 'text-pink-500')" class="w-6 h-6 rounded-full bg-pink-500 color-btn p2-color" data-color="text-pink-500"></button>
+                    <button onclick="updatePlayerConfig(2, 'color', 'text-black')" class="w-6 h-6 rounded-full bg-black color-btn p2-color" data-color="text-black"></button>
+                </div>
+                <!-- Icon Picker -->
+                <div class="flex gap-2 ml-auto">
+                    <button onclick="updatePlayerConfig(2, 'icon', 'fa-cat')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn selected p2-icon" data-icon="fa-cat"><i class="fas fa-cat"></i></button>
+                    <button onclick="updatePlayerConfig(2, 'icon', 'fa-paw')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn p2-icon" data-icon="fa-paw"><i class="fas fa-paw"></i></button>
+                    <button onclick="updatePlayerConfig(2, 'icon', 'fa-fish')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn p2-icon" data-icon="fa-fish"><i class="fas fa-fish"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Theme Select -->
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2">Board Theme</label>
+            <div class="grid grid-cols-5 gap-2">
+                <button onclick="setTheme('orange')" class="h-10 rounded-lg bg-gradient-to-br from-yellow-200 to-orange-400 ring-2 ring-offset-2 ring-orange-400 transform hover:scale-105 transition-transform"></button>
+                <button onclick="setTheme('void')" class="h-10 rounded-lg bg-gradient-to-br from-gray-700 to-black hover:scale-105 transition-transform"></button>
+                <button onclick="setTheme('calico')" class="h-10 rounded-lg bg-gradient-to-br from-white via-orange-200 to-gray-400 hover:scale-105 transition-transform"></button>
+                <button onclick="setTheme('siamese')" class="h-10 rounded-lg bg-gradient-to-br from-orange-100 to-stone-600 hover:scale-105 transition-transform"></button>
+                <button onclick="setTheme('forest')" class="h-10 rounded-lg bg-gradient-to-br from-lime-200 to-green-600 hover:scale-105 transition-transform"></button>
+            </div>
+        </div>
+
+        <button onclick="startGame()" class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 active:scale-95 transition-all text-lg mt-auto">
+            Start Game
+        </button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="hidden w-full max-w-lg p-4 flex-col items-center h-full justify-between py-8">
         
-        // New Geometric Cat Face
-        const Cat = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                {/* Face Outline with Ears */}
-                <path d="M12 3c-1.5 0-3 .5-4 1.5-.5-1-2.5-1.5-3.5 0-.5 1-1 3-1 4 0 4.5 3 8.5 8.5 8.5s8.5-4 8.5-8.5c0-1-.5-3-1-4-1-1.5-3-1-3.5 0-1-1-2.5-1.5-4-1.5z" />
-                {/* Eyes */}
-                <circle cx="9" cy="10" r="1.5" fill="currentColor" stroke="none"/>
-                <circle cx="15" cy="10" r="1.5" fill="currentColor" stroke="none"/>
-                {/* Nose/Mouth */}
-                <path d="M12 14l-1 1h2l-1-1z" fill="currentColor" stroke="none"/>
-                {/* Whiskers */}
-                <path d="M7 11h-3M7 13h-3M17 11h3M17 13h3" strokeWidth="1.5"/>
-            </svg>
-        );
+        <!-- Header -->
+        <div class="w-full flex justify-between items-center bg-white/30 backdrop-blur-md p-3 rounded-2xl shadow-sm mb-4">
+            <div class="flex items-center gap-2 transition-opacity duration-300" id="p1-badge">
+                <div class="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center text-2xl" id="p1-badge-icon">
+                    <!-- Icon injected JS -->
+                </div>
+                <div>
+                    <div class="text-xs font-bold uppercase opacity-75">Player 1</div>
+                    <div class="font-bold text-lg leading-tight truncate max-w-[80px]" id="disp-p1-name">Name</div>
+                </div>
+            </div>
 
-        // New Clean Paw Print (Separated Pads)
-        const PawPrint = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                {/* Main Pad */}
-                <path d="M12 12c-2.5 0-4.5 1.5-4.5 4s2 4 4.5 4 4.5-1.5 4.5-4-2-4-4.5-4z" />
-                {/* Toe Pads */}
-                <ellipse cx="6" cy="9" rx="2" ry="3" transform="rotate(-30 6 9)" />
-                <ellipse cx="10" cy="6" rx="2" ry="3" transform="rotate(-10 10 6)" />
-                <ellipse cx="14" cy="6" rx="2" ry="3" transform="rotate(10 14 6)" />
-                <ellipse cx="18" cy="9" rx="2" ry="3" transform="rotate(30 18 9)" />
-            </svg>
-        );
+            <div class="text-xl font-bold opacity-50 italic">VS</div>
 
-        const Bot = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                <rect width="18" height="10" x="3" y="11" rx="2" />
-                <circle cx="12" cy="5" r="2" />
-                <path d="M12 7v4" />
-                <line x1="8" x2="8" y1="16" y2="16" />
-                <line x1="16" x2="16" y1="16" y2="16" />
-            </svg>
-        );
+            <div class="flex items-center gap-2 transition-opacity duration-300 opacity-50" id="p2-badge">
+                <div class="text-right">
+                    <div class="text-xs font-bold uppercase opacity-75">Player 2</div>
+                    <div class="font-bold text-lg leading-tight truncate max-w-[80px]" id="disp-p2-name">Name</div>
+                </div>
+                <div class="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center text-2xl transform -scale-x-100" id="p2-badge-icon">
+                    <!-- Icon injected JS -->
+                </div>
+            </div>
+        </div>
 
-        const User = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-            </svg>
-        );
+        <!-- Board Wrapper -->
+        <div class="relative w-full aspect-square max-w-sm">
+            <!-- Grid -->
+            <div class="grid grid-cols-3 grid-rows-3 w-full h-full bg-white/40 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden gap-2 p-3" id="board">
+                <!-- Cells generated by JS -->
+            </div>
+            
+            <!-- Scratch Layer -->
+            <div id="scratch-layer" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10 filter drop-shadow-md"></div>
+        </div>
 
-        const Trophy = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                <path d="M4 22h16" />
-                <path d="M12.8 15.5a6 6 0 0 0 7.4-4" />
-                <path d="M3.8 11.5a6 6 0 0 0 7.4 4" />
-                <path d="M12 15.5v2.5" />
-                <path d="m8 22 2-4h4l2 4" />
-            </svg>
-        );
+        <!-- Footer / Restart -->
+        <div class="mt-8 flex gap-4">
+            <button onclick="resetBoard()" class="px-6 py-2 bg-white/20 hover:bg-white/40 backdrop-blur rounded-full font-bold shadow-sm transition-all text-inherit">
+                <i class="fas fa-redo-alt mr-2"></i> Restart
+            </button>
+            <button onclick="toMenu()" class="px-6 py-2 bg-white/20 hover:bg-white/40 backdrop-blur rounded-full font-bold shadow-sm transition-all text-inherit">
+                <i class="fas fa-home mr-2"></i> Menu
+            </button>
+        </div>
+    </div>
 
-        const RotateCcw = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-            </svg>
-        );
+    <!-- WIN MODAL -->
+    <div id="win-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop bg-black/40 px-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center transform scale-90 opacity-0 transition-all duration-300" id="modal-content">
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-5xl relative overflow-hidden" id="modal-icon-container">
+                <i class="fas fa-trophy text-yellow-500 relative z-10" id="modal-icon"></i>
+            </div>
+            <h2 class="text-4xl font-bold text-gray-800 mb-2" id="modal-title">Winner!</h2>
+            <p class="text-gray-500 mb-6 font-medium" id="modal-msg">Player 1 scratched the board!</p>
+            
+            <div class="flex flex-col gap-2">
+                <button onclick="closeModal(); resetBoard();" class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-700 transition-colors shadow-lg">
+                    Play Again
+                </button>
+                <button onclick="closeModal(); toMenu();" class="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">
+                    Back to Menu
+                </button>
+            </div>
+        </div>
+    </div>
 
-        const Trash2 = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                <path d="M3 6h18" />
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                <line x1="10" x2="10" y1="11" y2="17" />
-                <line x1="14" x2="14" y1="11" y2="17" />
-            </svg>
-        );
-
-        const LogOut = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" x2="9" y1="12" y2="12" />
-            </svg>
-        );
-
-        const Play = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
-        );
-
-        const Check = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                <polyline points="20 6 9 17 4 12" />
-            </svg>
-        );
-
-        const Ban = ({ size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-                <circle cx="12" cy="12" r="10" />
-                <path d="m4.9 4.9 14.2 14.2" />
-            </svg>
-        );
-
-        // --- THEME CONFIGURATION ---
-        const THEMES = {
-            orange: { 
-                id: 'orange', 
-                name: 'Ginger', 
-                fill: 'fill-orange-400', 
-                stroke: 'stroke-orange-700', 
-                text: 'text-orange-600', 
-                bg: 'bg-orange-100', 
-                ring: 'ring-orange-200',
-                border: 'border-orange-200',
-                preview: 'bg-orange-400',
-                slash: 'stroke-orange-500' 
-            },
-            black: { 
-                id: 'black', 
-                name: 'Midnight', 
-                fill: 'fill-slate-700', 
-                stroke: 'stroke-slate-900', 
-                text: 'text-slate-700', 
-                bg: 'bg-slate-200', 
-                ring: 'ring-slate-300',
-                border: 'border-slate-200',
-                preview: 'bg-slate-700',
-                slash: 'stroke-slate-700'
-            },
-            grey: { 
-                id: 'grey', 
-                name: 'Smokey', 
-                fill: 'fill-gray-400', 
-                stroke: 'stroke-gray-600', 
-                text: 'text-gray-600', 
-                bg: 'bg-gray-100', 
-                ring: 'ring-gray-200',
-                border: 'border-gray-200',
-                preview: 'bg-gray-400',
-                slash: 'stroke-gray-500'
-            },
-            white: { 
-                id: 'white', 
-                name: 'Snowball', 
-                fill: 'fill-white', 
-                stroke: 'stroke-stone-400', 
-                text: 'text-stone-500', 
-                bg: 'bg-stone-100', 
-                ring: 'ring-stone-200',
-                border: 'border-stone-200',
-                preview: 'bg-stone-100 border-2 border-stone-300',
-                slash: 'stroke-stone-400'
-            },
-            cream: { 
-                id: 'cream', 
-                name: 'Cream', 
-                fill: 'fill-yellow-200', 
-                stroke: 'stroke-yellow-600', 
-                text: 'text-yellow-600', 
-                bg: 'bg-yellow-50', 
-                ring: 'ring-yellow-200',
-                border: 'border-yellow-200',
-                preview: 'bg-yellow-200',
-                slash: 'stroke-yellow-500'
-            }
+    <script>
+        /* --- Game State & Config --- */
+        const state = {
+            mode: 'pvp',
+            difficulty: 'medium',
+            turn: 0,
+            board: Array(9).fill(null),
+            active: false,
+            p1: { name: 'Player 1', iconName: 'fa-cat', colorClass: 'text-blue-600' },
+            p2: { name: 'Player 2', iconName: 'fa-cat', colorClass: 'text-red-500' },
+            theme: 'orange'
         };
 
-        const CatTicTacToe = () => {
-            const [gameStarted, setGameStarted] = useState(false);
-            const [gameMode, setGameMode] = useState('pvp'); 
+        const winningCombos = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        /* --- DOM Elements --- */
+        const appBody = document.getElementById('app-body');
+        const setupScreen = document.getElementById('setup-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const boardEl = document.getElementById('board');
+        const scratchLayer = document.getElementById('scratch-layer');
+        const winModal = document.getElementById('win-modal');
+        const modalContent = document.getElementById('modal-content');
+
+        /* --- Initialization --- */
+        function init() {
+            boardEl.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'bg-white/60 hover:bg-white/80 rounded-2xl flex items-center justify-center cursor-pointer text-5xl shadow-sm cell relative overflow-hidden';
+                cell.dataset.index = i;
+                cell.addEventListener('click', () => handleCellClick(i));
+                boardEl.appendChild(cell);
+            }
+        }
+        init();
+
+        /* --- Setup Logic --- */
+        function updatePlayerConfig(playerNum, type, value) {
+            const playerKey = playerNum === 1 ? 'p1' : 'p2';
+            const propKey = type === 'icon' ? 'iconName' : 'colorClass';
+            state[playerKey][propKey] = value;
+
+            // Update UI visual selection
+            const btnClass = playerNum === 1 ? `.p1-${type}` : `.p2-${type}`;
+            const btns = document.querySelectorAll(btnClass);
+            btns.forEach(btn => {
+                if (btn.dataset[type] === value) btn.classList.add('selected');
+                else btn.classList.remove('selected');
+            });
+
+            // Update Preview Icon
+            const previewEl = document.getElementById(`p${playerNum}-preview`);
+            previewEl.className = `text-xl ${state[playerKey].colorClass} ${playerNum === 2 ? 'transform -scale-x-100' : ''}`;
+            previewEl.innerHTML = `<i class="fas ${state[playerKey].iconName}"></i>`;
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            const btnPvp = document.getElementById('btn-pvp');
+            const btnAi = document.getElementById('btn-ai');
+            const p2Input = document.getElementById('p2-name');
+            const aiDiff = document.getElementById('ai-difficulty');
+            const p2Label = document.getElementById('p2-label');
+
+            if (mode === 'pvp') {
+                btnPvp.className = "flex-1 py-2 rounded-lg font-bold bg-white shadow-sm text-gray-800 transition-all text-sm";
+                btnAi.className = "flex-1 py-2 rounded-lg font-bold text-gray-500 hover:bg-gray-100 transition-all text-sm";
+                p2Input.style.display = 'block';
+                aiDiff.style.display = 'none';
+                p2Label.innerText = "Player 2";
+                p2Input.value = "Opponent";
+            } else {
+                btnAi.className = "flex-1 py-2 rounded-lg font-bold bg-white shadow-sm text-gray-800 transition-all text-sm";
+                btnPvp.className = "flex-1 py-2 rounded-lg font-bold text-gray-500 hover:bg-gray-100 transition-all text-sm";
+                p2Input.style.display = 'none';
+                aiDiff.style.display = 'block';
+                p2Label.innerText = "Bot Lvl";
+                aiDiff.onchange = (e) => { state.difficulty = e.target.value; };
+            }
+        }
+
+        function setTheme(theme) {
+            appBody.classList.remove(`theme-${state.theme}`);
+            state.theme = theme;
+            appBody.classList.add(`theme-${theme}`);
             
-            const [p1Name, setP1Name] = useState('');
-            const [p2Name, setP2Name] = useState('');
-            const [p1ThemeId, setP1ThemeId] = useState('orange');
-            const [p2ThemeId, setP2ThemeId] = useState('black');
+            const buttons = document.querySelectorAll('#setup-screen button[onclick^="setTheme"]');
+            buttons.forEach(btn => btn.classList.remove('ring-2', 'ring-offset-2', 'ring-orange-400', 'ring-gray-500'));
+        }
 
-            const [board, setBoard] = useState(Array(9).fill(null));
-            const [isP1Next, setIsP1Next] = useState(true);
-            const [scores, setScores] = useState({ p1: 0, p2: 0 });
-            const [winner, setWinner] = useState(null);
-            const [winningLine, setWinningLine] = useState([]);
-            const [isDraw, setIsDraw] = useState(false);
+        function startGame() {
+            state.p1.name = document.getElementById('p1-name').value || 'Player 1';
             
-            const [showWinnerModal, setShowWinnerModal] = useState(false);
+            if (state.mode === 'pvp') {
+                state.p2.name = document.getElementById('p2-name').value || 'Player 2';
+            } else {
+                state.difficulty = document.getElementById('ai-difficulty').value;
+                const botNames = { easy: 'KittenBot', medium: 'CatBot', hard: 'LionBot' };
+                state.p2.name = botNames[state.difficulty];
+            }
 
-            const p1Theme = THEMES[p1ThemeId];
-            const p2Theme = THEMES[p2ThemeId];
-            const activeTheme = isP1Next ? p1Theme : p2Theme;
+            // Update Game Header
+            document.getElementById('disp-p1-name').innerText = state.p1.name;
+            document.getElementById('disp-p2-name').innerText = state.p2.name;
 
-            const player1 = p1Name.trim() || p1Theme.name;
-            const player2 = gameMode === 'ai' ? 'Robo-Cat' : (p2Name.trim() || p2Theme.name);
+            // Set Header Badges
+            document.getElementById('p1-badge-icon').className = `w-12 h-12 bg-white rounded-full shadow flex items-center justify-center text-2xl ${state.p1.colorClass}`;
+            document.getElementById('p1-badge-icon').innerHTML = `<i class="fas ${state.p1.iconName}"></i>`;
 
-            const checkWinner = useCallback((squares) => {
-                const lines = [
-                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
-                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
-                    [0, 4, 8], [2, 4, 6]
-                ];
+            document.getElementById('p2-badge-icon').className = `w-12 h-12 bg-white rounded-full shadow flex items-center justify-center text-2xl transform -scale-x-100 ${state.p2.colorClass}`;
+            document.getElementById('p2-badge-icon').innerHTML = `<i class="fas ${state.p2.iconName}"></i>`;
 
-                for (let i = 0; i < lines.length; i++) {
-                    const [a, b, c] = lines[i];
-                    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-                        return { winner: squares[a], line: lines[i] };
+            setupScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            gameScreen.classList.add('flex');
+            
+            resetBoard();
+        }
+
+        function toMenu() {
+            gameScreen.classList.add('hidden');
+            gameScreen.classList.remove('flex');
+            setupScreen.classList.remove('hidden');
+        }
+
+        /* --- Game Logic --- */
+        function resetBoard() {
+            state.board.fill(null);
+            state.turn = 0;
+            state.active = true;
+            scratchLayer.innerHTML = '';
+            
+            Array.from(boardEl.children).forEach(cell => {
+                cell.innerHTML = '';
+                cell.classList.remove('bg-gray-50');
+            });
+
+            updateTurnIndicator();
+        }
+
+        function updateTurnIndicator() {
+            const p1Badge = document.getElementById('p1-badge');
+            const p2Badge = document.getElementById('p2-badge');
+
+            if (state.turn === 0) {
+                p1Badge.classList.remove('opacity-50');
+                p1Badge.classList.add('scale-105');
+                p2Badge.classList.add('opacity-50');
+                p2Badge.classList.remove('scale-105');
+            } else {
+                p1Badge.classList.add('opacity-50');
+                p1Badge.classList.remove('scale-105');
+                p2Badge.classList.remove('opacity-50');
+                p2Badge.classList.add('scale-105');
+            }
+        }
+
+        function handleCellClick(index) {
+            if (!state.active || state.board[index] !== null) return;
+            if (state.mode === 'ai' && state.turn === 1) return;
+
+            makeMove(index, state.turn);
+
+            if (state.active && state.mode === 'ai' && state.turn === 1) {
+                setTimeout(() => {
+                    const aiMoveIndex = getBestMove();
+                    if (aiMoveIndex !== -1) {
+                        makeMove(aiMoveIndex, 1);
+                    }
+                }, 600);
+            }
+        }
+
+        function makeMove(index, playerIdx) {
+            if (!state.active) return;
+
+            state.board[index] = playerIdx;
+            const playerConfig = playerIdx === 0 ? state.p1 : state.p2;
+            
+            const cell = boardEl.children[index];
+            // Render Icon: Flip if Player 2
+            const flipClass = playerIdx === 1 ? 'transform -scale-x-100' : '';
+            cell.innerHTML = `<i class="fas ${playerConfig.iconName} ${playerConfig.colorClass} ${flipClass} game-icon"></i>`;
+            
+            const win = checkWin(state.board, playerIdx);
+            if (win) {
+                endGame(playerIdx, win);
+                return;
+            }
+
+            if (!state.board.includes(null)) {
+                endGame(-1, null);
+                return;
+            }
+
+            state.turn = 1 - state.turn;
+            updateTurnIndicator();
+        }
+
+        function checkWin(board, player) {
+            for (let combo of winningCombos) {
+                if (board[combo[0]] === player && 
+                    board[combo[1]] === player && 
+                    board[combo[2]] === player) {
+                    return combo;
+                }
+            }
+            return null;
+        }
+
+        function endGame(winnerIdx, combo) {
+            state.active = false;
+
+            if (winnerIdx !== -1 && combo) {
+                drawScratch(combo);
+                setTimeout(() => showModal(winnerIdx), 1200);
+            } else {
+                setTimeout(() => showModal(-1), 500);
+            }
+        }
+
+        /* --- Visuals: Realistic Cat Scratch --- */
+        function drawScratch(combo) {
+            const cell0 = boardEl.children[combo[0]];
+            const cell2 = boardEl.children[combo[2]];
+
+            const rect0 = cell0.getBoundingClientRect();
+            const rect2 = cell2.getBoundingClientRect();
+            const parentRect = boardEl.getBoundingClientRect();
+
+            const x1 = rect0.left - parentRect.left + rect0.width / 2;
+            const y1 = rect0.top - parentRect.top + rect0.height / 2;
+            const x2 = rect2.left - parentRect.left + rect2.width / 2;
+            const y2 = rect2.top - parentRect.top + rect2.height / 2;
+
+            const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+            // Generate 3 jagged lines
+            for(let i=-1; i<=1; i++) {
+                const offset = i * 14; 
+                
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, "svg");
+                svg.setAttribute("class", "scratch-line");
+                svg.setAttribute("width", "100%");
+                svg.setAttribute("height", "100%");
+                svg.style.top = "0";
+                svg.style.left = "0";
+
+                const path = document.createElementNS(svgNS, "path");
+                
+                // Coordinates for start/end
+                const startX = x1 + (offset * Math.sin(angle * Math.PI/180));
+                const startY = y1 - (offset * Math.cos(angle * Math.PI/180));
+                const endX = x2 + (offset * Math.sin(angle * Math.PI/180));
+                const endY = y2 - (offset * Math.cos(angle * Math.PI/180));
+
+                // Create Jaggedness
+                // We create a path with a few intermediate random points to simulate tearing
+                const segmentCount = 5;
+                let d = `M ${startX} ${startY}`;
+                
+                const dx = (endX - startX) / segmentCount;
+                const dy = (endY - startY) / segmentCount;
+
+                for (let j = 1; j < segmentCount; j++) {
+                    const jitter = (Math.random() - 0.5) * 6; // Jitter magnitude
+                    const currX = startX + dx * j + jitter;
+                    const currY = startY + dy * j + jitter;
+                    d += ` L ${currX} ${currY}`;
+                }
+                d += ` L ${endX} ${endY}`;
+                
+                path.setAttribute("d", d);
+                path.setAttribute("stroke-width", Math.random() * 2 + 3); // Varying width 3-5px
+                path.setAttribute("class", "scratch-path");
+                
+                // Stagger timing
+                path.style.animationDelay = `${Math.abs(i) * 40}ms`;
+
+                svg.appendChild(path);
+                scratchLayer.appendChild(svg);
+            }
+        }
+
+        /* --- Modal Logic --- */
+        function showModal(winnerIdx) {
+            winModal.classList.remove('hidden');
+            winModal.classList.add('flex');
+            
+            setTimeout(() => {
+                modalContent.classList.remove('scale-90', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            const title = document.getElementById('modal-title');
+            const msg = document.getElementById('modal-msg');
+            const icon = document.getElementById('modal-icon');
+            const container = document.getElementById('modal-icon-container');
+
+            if (winnerIdx === -1) {
+                title.innerText = "It's a Draw!";
+                title.className = "text-4xl font-bold text-gray-600 mb-2";
+                msg.innerText = "No scratches today.";
+                icon.className = "fas fa-handshake text-gray-500 relative z-10";
+            } else {
+                const winnerConfig = winnerIdx === 0 ? state.p1 : state.p2;
+                title.innerText = "Victory!";
+                title.className = "text-4xl font-bold text-gray-800 mb-2";
+                msg.innerText = `${winnerConfig.name} is the superior cat!`;
+                
+                // Show winner icon
+                icon.className = `fas ${winnerConfig.iconName} ${winnerConfig.colorClass} relative z-10`;
+                if(winnerIdx === 1) icon.classList.add('transform', '-scale-x-100');
+            }
+        }
+
+        function closeModal() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-90', 'opacity-0');
+            setTimeout(() => {
+                winModal.classList.add('hidden');
+                winModal.classList.remove('flex');
+            }, 300);
+        }
+
+        /* --- AI Logic --- */
+        function getBestMove() {
+            const board = state.board;
+            const emptyIndices = board.map((v, i) => v === null ? i : null).filter(v => v !== null);
+            
+            if (state.difficulty === 'easy') {
+                return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+            }
+
+            if (state.difficulty === 'medium') {
+                 if (Math.random() < 0.2) {
+                    return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+                 }
+                 // Block/Win logic
+                 for (let i of emptyIndices) {
+                     board[i] = 1;
+                     if (checkWin(board, 1)) { board[i] = null; return i; }
+                     board[i] = null;
+                 }
+                 for (let i of emptyIndices) {
+                     board[i] = 0;
+                     if (checkWin(board, 0)) { board[i] = null; return i; }
+                     board[i] = null;
+                 }
+                 return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+            }
+
+            // Hard
+            let bestScore = -Infinity;
+            let move = -1;
+            for (let i of emptyIndices) {
+                board[i] = 1;
+                let score = minimax(board, 0, false);
+                board[i] = null;
+                if (score > bestScore) {
+                    bestScore = score;
+                    move = i;
+                }
+            }
+            return move;
+        }
+
+        const scores = { 1: 10, 0: -10, tie: 0 };
+
+        function minimax(board, depth, isMaximizing) {
+            if (checkWin(board, 1)) return scores[1] - depth;
+            if (checkWin(board, 0)) return scores[0] + depth;
+            if (!board.includes(null)) return scores.tie;
+
+            if (isMaximizing) {
+                let bestScore = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === null) {
+                        board[i] = 1;
+                        let score = minimax(board, depth + 1, false);
+                        board[i] = null;
+                        bestScore = Math.max(score, bestScore);
                     }
                 }
-                return null;
-            }, []);
-
-            const handleGameEnd = (result, currentBoard) => {
-                if (result) {
-                    setWinner(result.winner);
-                    setWinningLine(result.line);
-                    setScores(prev => ({
-                        ...prev,
-                        [result.winner]: prev[result.winner] + 1
-                    }));
-                } else if (!currentBoard.includes(null)) {
-                    setIsDraw(true);
-                } else {
-                    setIsP1Next(prev => !prev);
+                return bestScore;
+            } else {
+                let bestScore = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === null) {
+                        board[i] = 0;
+                        let score = minimax(board, depth + 1, true);
+                        board[i] = null;
+                        bestScore = Math.min(score, bestScore);
+                    }
                 }
-            };
-
-            const handleClick = useCallback((index) => {
-                if (board[index] || winner || isDraw) return;
-                if (gameMode === 'ai' && !isP1Next) return;
-
-                const newBoard = [...board];
-                newBoard[index] = isP1Next ? 'p1' : 'p2';
-                setBoard(newBoard);
-
-                const result = checkWinner(newBoard);
-                handleGameEnd(result, newBoard);
-            }, [board, winner, isDraw, isP1Next, gameMode, checkWinner]);
-
-            useEffect(() => {
-                if (gameMode === 'ai' && !isP1Next && !winner && !isDraw) {
-                    const timer = setTimeout(() => {
-                        const makeAiMove = () => {
-                            for (let i = 0; i < 9; i++) {
-                                if (!board[i]) {
-                                    const testBoard = [...board];
-                                    testBoard[i] = 'p2';
-                                    if (checkWinner(testBoard)) return i;
-                                }
-                            }
-                            for (let i = 0; i < 9; i++) {
-                                if (!board[i]) {
-                                    const testBoard = [...board];
-                                    testBoard[i] = 'p1';
-                                    if (checkWinner(testBoard)) return i;
-                                }
-                            }
-                            if (!board[4]) return 4;
-                            const available = board.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
-                            return available[Math.floor(Math.random() * available.length)];
-                        };
-
-                        const aiMoveIndex = makeAiMove();
-                        const newBoard = [...board];
-                        newBoard[aiMoveIndex] = 'p2';
-                        setBoard(newBoard);
-
-                        const result = checkWinner(newBoard);
-                        handleGameEnd(result, newBoard);
-                    }, 600);
-                    return () => clearTimeout(timer);
-                }
-            }, [isP1Next, gameMode, winner, isDraw, board, checkWinner]);
-
-            useEffect(() => {
-                if (winner) {
-                    const timer = setTimeout(() => {
-                        setShowWinnerModal(true);
-                    }, 1500);
-                    return () => clearTimeout(timer);
-                } else if (isDraw) {
-                    const timer = setTimeout(() => {
-                        setShowWinnerModal(true);
-                    }, 500);
-                    return () => clearTimeout(timer);
-                } else {
-                    setShowWinnerModal(false);
-                }
-            }, [winner, isDraw]);
-
-            const resetGame = () => {
-                setBoard(Array(9).fill(null));
-                setWinner(null);
-                setWinningLine([]);
-                setIsDraw(false);
-                setIsP1Next(true);
-            };
-
-            const resetScores = () => {
-                resetGame();
-                setScores({ p1: 0, p2: 0 });
-            };
-
-            const exitGame = () => {
-                setGameStarted(false);
-                resetScores();
-                setP1Name('');
-                setP2Name('');
-            };
-
-            const startGame = (e) => {
-                e.preventDefault();
-                setGameStarted(true);
-            };
-
-            const BackgroundPaw = ({ style }) => (
-                <div className={`absolute opacity-20 pointer-events-none animate-pulse ${p1Theme.text}`} style={style}>
-                    <PawPrint size={48} />
-                </div>
-            );
-
-            const ThemeSelector = ({ selectedId, onSelect, disabledId }) => (
-                <div className="flex gap-2 mt-2">
-                    {Object.values(THEMES).map((theme) => {
-                        const isDisabled = theme.id === disabledId;
-                        return (
-                            <button
-                                key={theme.id}
-                                type="button"
-                                onClick={() => !isDisabled && onSelect(theme.id)}
-                                disabled={isDisabled}
-                                className={`
-                                    w-8 h-8 rounded-full transition-transform flex items-center justify-center 
-                                    ${theme.preview} 
-                                    ${selectedId === theme.id ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}
-                                    ${isDisabled ? 'opacity-20 cursor-not-allowed ring-2 ring-gray-200 grayscale' : 'hover:scale-110 cursor-pointer'}
-                                `}
-                                title={isDisabled ? `${theme.name} (Taken)` : theme.name}
-                            >
-                                {selectedId === theme.id && <Check size={14} className={theme.id === 'white' || theme.id === 'cream' ? 'text-stone-500' : 'text-white'} />}
-                                {isDisabled && selectedId !== theme.id && <Ban size={14} className="text-gray-500 absolute" />}
-                            </button>
-                        );
-                    })}
-                </div>
-            );
-
-            // WinningSlash: Parallel, crisp, no fanning
-            const WinningSlash = ({ line, winnerId }) => {
-                if (!line || line.length !== 3 || !winnerId) return null;
-
-                const winnerTheme = THEMES[winnerId === 'p1' ? p1ThemeId : p2ThemeId];
-                const startIdx = line[0];
-                const endIdx = line[2];
-                const getPos = (idx) => {
-                    const row = Math.floor(idx / 3);
-                    const col = idx % 3;
-                    return { x: (col * 33.33) + 16.66, y: (row * 33.33) + 16.66 };
-                };
-
-                const start = getPos(startIdx);
-                const end = getPos(endIdx);
-                const angle = Math.atan2(end.y - start.y, end.x - start.x);
-                const dist = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-                const cx = (start.x + end.x) / 2;
-                const cy = (start.y + end.y) / 2;
-                const extension = 35; 
-                
-                const paths = [-1, 0, 1].map(i => {
-                    const spacing = 3.5; 
-                    const drawAngle = angle; // Parallel
-                    const lenMod = i === 0 ? 1 : 0.95; 
-                    const totalLen = (dist + (extension * 2)) * lenMod;
-                    const perpAngle = angle + Math.PI / 2;
-                    
-                    const offsetX = Math.cos(perpAngle) * (spacing * i);
-                    const offsetY = Math.sin(perpAngle) * (spacing * i);
-                    
-                    const sx = cx - (Math.cos(drawAngle) * totalLen / 2) + offsetX;
-                    const sy = cy - (Math.sin(drawAngle) * totalLen / 2) + offsetY;
-                    const ex = cx + (Math.cos(drawAngle) * totalLen / 2) + offsetX;
-                    const ey = cy + (Math.sin(drawAngle) * totalLen / 2) + offsetY;
-
-                    const curveAmp = 1.5; 
-                    const midX = (sx + ex) / 2 + Math.cos(perpAngle) * curveAmp;
-                    const midY = (sy + ey) / 2 + Math.sin(perpAngle) * curveAmp;
-
-                    return (
-                        <path 
-                            key={i}
-                            d={`M ${sx},${sy} Q ${midX},${midY} ${ex},${ey}`}
-                            className={`${winnerTheme.slash} animate-scratch`}
-                            strokeWidth={i === 0 ? "1" : "0.7"}
-                            fill="none"
-                            strokeLinecap="round"
-                            style={{ animationDelay: `${Math.abs(i) * 0.05}s` }}
-                        />
-                    );
-                });
-
-                return (
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
-                        <defs>
-                            <filter id="scratchTexture" x="-20%" y="-20%" width="140%" height="140%">
-                                <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" result="noise" />
-                                <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.4" xChannelSelector="R" yChannelSelector="G" />
-                            </filter>
-                        </defs>
-                        <g filter="url(#scratchTexture)">{paths}</g>
-                    </svg>
-                );
-            };
-
-            if (!gameStarted) {
-                return (
-                    <div className={`min-h-screen flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden bg-gradient-to-br from-gray-50 to-stone-100`}>
-                        <div className="absolute top-[10%] left-[10%] rotate-[-12deg] text-orange-200 opacity-40"><PawPrint size={48}/></div>
-                        <div className="absolute top-[20%] right-[15%] rotate-[15deg] text-slate-200 opacity-40"><PawPrint size={48}/></div>
-                        <div className="absolute bottom-[15%] left-[20%] rotate-[-5deg] text-gray-200 opacity-40"><PawPrint size={48}/></div>
-                        <div className="absolute bottom-[10%] right-[10%] rotate-[10deg] text-stone-200 opacity-40"><PawPrint size={48}/></div>
-
-                        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full z-10 animate-fade-in ring-8 ring-stone-100">
-                            <div className="text-center mb-6">
-                                <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-3">
-                                    <Cat className="fill-orange-400 stroke-orange-700" size={40} />
-                                    Tic-Cat-Toe
-                                </h1>
-                                <p className="text-gray-500">Customize your cats!</p>
-                            </div>
-
-                            <div className="flex gap-4 mb-6">
-                                <button type="button" onClick={() => setGameMode('pvp')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex flex-col items-center gap-2 border-2 ${gameMode === 'pvp' ? 'bg-orange-50 border-orange-400 text-orange-700' : 'bg-white border-gray-200 text-gray-400 hover:border-orange-200'}`}>
-                                    <div className="flex gap-1"><User size={20}/><User size={20}/></div>
-                                    2 Players
-                                </button>
-                                <button type="button" onClick={() => setGameMode('ai')} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex flex-col items-center gap-2 border-2 ${gameMode === 'ai' ? 'bg-slate-50 border-slate-400 text-slate-700' : 'bg-white border-gray-200 text-gray-400 hover:border-slate-200'}`}>
-                                    <div className="flex gap-1"><User size={20}/><Bot size={20}/></div>
-                                    vs Robo-Cat
-                                </button>
-                            </div>
-
-                            <form onSubmit={startGame} className="space-y-6">
-                                <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 transition-colors`}>
-                                    <label className="block text-sm font-bold text-gray-600 mb-2">PLAYER 1 (You)</label>
-                                    <div className="relative flex items-center mb-3">
-                                        <Cat className={`absolute left-3 ${THEMES[p1ThemeId].text}`} size={24} />
-                                        <input type="text" placeholder={THEMES[p1ThemeId].name} value={p1Name} onChange={(e) => setP1Name(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:border-orange-400 focus:outline-none transition-colors text-gray-700 font-medium" maxLength={10} />
-                                    </div>
-                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Choose Color</span>
-                                    <ThemeSelector selectedId={p1ThemeId} onSelect={setP1ThemeId} disabledId={p2ThemeId} />
-                                </div>
-
-                                <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 transition-colors`}>
-                                    <label className="block text-sm font-bold text-gray-600 mb-2">{gameMode === 'ai' ? 'PLAYER 2 (AI)' : 'PLAYER 2 (Opponent)'}</label>
-                                    <div className="relative flex items-center mb-3">
-                                        {gameMode === 'ai' ? <Bot className={`absolute left-3 ${THEMES[p2ThemeId].text}`} size={24} /> : <Cat className={`absolute left-3 ${THEMES[p2ThemeId].text}`} size={24} />}
-                                        <input type="text" placeholder={THEMES[p2ThemeId].name} value={gameMode === 'ai' ? "Robo-Cat" : p2Name} onChange={(e) => gameMode !== 'ai' && setP2Name(e.target.value)} disabled={gameMode === 'ai'} className={`w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:border-slate-400 focus:outline-none transition-colors text-gray-700 font-medium ${gameMode === 'ai' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`} maxLength={10} />
-                                    </div>
-                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Choose Color</span>
-                                    <ThemeSelector selectedId={p2ThemeId} onSelect={setP2ThemeId} disabledId={p1ThemeId} />
-                                </div>
-
-                                <button type="submit" className="w-full py-4 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
-                                    Start Game
-                                    <Play size={20} fill="currentColor" />
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                );
+                return bestScore;
             }
-
-            return (
-                <div className={`min-h-screen bg-gradient-to-br from-white to-gray-100 flex flex-col items-center justify-center p-4 font-sans relative overflow-hidden select-none`}>
-                    <BackgroundPaw style={{ top: '10%', left: '10%', transform: 'rotate(-12deg)' }} />
-                    <BackgroundPaw style={{ top: '20%', right: '15%', transform: 'rotate(15deg)' }} />
-                    <BackgroundPaw style={{ bottom: '15%', left: '20%', transform: 'rotate(-5deg)' }} />
-                    <BackgroundPaw style={{ bottom: '10%', right: '10%', transform: 'rotate(10deg)' }} />
-
-                    <div className="z-10 text-center mb-6">
-                        <div className="absolute top-4 left-4">
-                            <button onClick={exitGame} className="p-2 bg-white rounded-full shadow-sm text-gray-400 hover:text-red-500 transition-colors" title="Change Players"><LogOut size={20} /></button>
-                        </div>
-                        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2 flex flex-wrap items-center justify-center gap-2 sm:gap-4 drop-shadow-sm px-4">
-                            <span className={`${p1Theme.text} truncate max-w-[150px]`}>{player1}</span>
-                            <span className="text-gray-400 text-xl">vs</span>
-                            <span className={`${p2Theme.text} truncate max-w-[150px]`}>{player2}</span>
-                        </h1>
-                    </div>
-
-                    <div className="flex gap-4 mb-8 w-full max-w-sm justify-between z-10 px-2">
-                        <div className={`flex-1 rounded-2xl p-4 flex flex-col items-center shadow-lg transition-all duration-300 ${isP1Next && !winner && !isDraw ? `${p1Theme.bg} scale-105 ring-4 ${p1Theme.ring}` : 'bg-white'}`}>
-                            <Cat className={`mb-2 ${isP1Next ? p1Theme.text : 'text-gray-300'}`} size={32} />
-                            <span className="text-gray-500 font-bold text-xs uppercase tracking-wider truncate w-full text-center">{player1}</span>
-                            <span className={`text-3xl font-black ${p1Theme.text}`}>{scores.p1}</span>
-                        </div>
-                        <div className={`flex-1 rounded-2xl p-4 flex flex-col items-center shadow-lg transition-all duration-300 ${!isP1Next && !winner && !isDraw ? `${p2Theme.bg} scale-105 ring-4 ${p2Theme.ring}` : 'bg-white'}`}>
-                            {gameMode === 'ai' ? <Bot className={`mb-2 ${!isP1Next ? p2Theme.text : 'text-gray-300'}`} size={32} /> : <Cat className={`mb-2 ${!isP1Next ? p2Theme.text : 'text-gray-300'}`} size={32} />}
-                            <span className="text-gray-500 font-bold text-xs uppercase tracking-wider truncate w-full text-center">{player2}</span>
-                            <span className={`text-3xl font-black ${p2Theme.text}`}>{scores.p2}</span>
-                        </div>
-                    </div>
-
-                    <div className={`relative z-10 bg-white p-4 rounded-3xl shadow-xl ring-8 ${activeTheme.ring} transition-all duration-500`}>
-                        <div className="grid grid-cols-3 gap-3">
-                            {board.map((square, index) => {
-                                const isWinningSquare = winningLine.includes(index);
-                                const cellTheme = square === 'p1' ? p1Theme : (square === 'p2' ? p2Theme : null);
-                                return (
-                                    <button key={index} onClick={() => handleClick(index)} disabled={!!square || !!winner || (gameMode === 'ai' && !isP1Next)} className={`w-20 h-20 sm:w-24 sm:h-24 rounded-xl flex items-center justify-center text-4xl transition-all duration-200 transform hover:scale-105 active:scale-95 ${!square && !winner ? (gameMode === 'ai' && !isP1Next ? 'cursor-wait' : 'hover:bg-gray-50 cursor-pointer') : ''} ${isWinningSquare ? 'bg-yellow-100 ring-4 ring-yellow-300 scale-110 z-10' : 'bg-gray-50'}`}>
-                                        {square && (
-                                            <div className={square === 'p1' ? 'animate-bounce-short' : 'animate-pop-in'}>
-                                                <PawPrint size={52} className={`${cellTheme.fill} ${cellTheme.stroke} ${square === 'p2' ? 'transform rotate-12 scale-x-[-1]' : 'transform -rotate-12'}`} strokeWidth={2} />
-                                            </div>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <WinningSlash line={winningLine} winnerId={winner} />
-                        {showWinnerModal && (winner || isDraw) && (
-                            <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-3xl flex flex-col items-center justify-center p-6 text-center animate-fade-in z-30">
-                                {winner ? (
-                                    <>
-                                        <Trophy className="text-yellow-400 mb-4 animate-bounce" size={48} />
-                                        <h2 className="text-3xl font-black text-gray-800 mb-2 truncate w-full">{winner === 'p1' ? `${player1} Wins!` : `${player2} Wins!`}</h2>
-                                        <div className="mb-6"><Cat size={64} className={`${THEMES[winner === 'p1' ? p1ThemeId : p2ThemeId].fill} ${THEMES[winner === 'p1' ? p1ThemeId : p2ThemeId].stroke} mx-auto`} /></div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="flex gap-2 mb-4 justify-center"><PawPrint className={`${p1Theme.text} transform -rotate-12`} size={32} /><PawPrint className={`${p2Theme.text} transform rotate-12 scale-x-[-1]`} size={32} /></div>
-                                        <h2 className="text-3xl font-black text-gray-800 mb-2">It's a Draw!</h2>
-                                        <p className="text-gray-500 mb-6">Too much scratching!</p>
-                                    </>
-                                )}
-                                <button onClick={resetGame} className="px-8 py-3 bg-gray-900 text-white rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"><RotateCcw size={20} /> Play Again</button>
-                            </div>
-                        )}
-                    </div>
-
-                    {!winner && !isDraw && (
-                        <div className={`mt-8 z-10 flex items-center gap-3 bg-white px-6 py-2 rounded-full shadow-sm text-gray-600 font-medium animate-fade-in border border-gray-100 ring-2 ${activeTheme.ring}`}>
-                            {isP1Next ? <><Cat size={20} className={p1Theme.text} /><span className={`${p1Theme.text} truncate max-w-[150px]`}>{player1}'s Turn</span></> : <>{gameMode === 'ai' ? <Bot size={20} className={p2Theme.text}/> : <Cat size={20} className={p2Theme.text} />}<span className={`${p2Theme.text} truncate max-w-[150px]`}>{player2}'s Turn</span></>}
-                        </div>
-                    )}
-
-                    <button onClick={resetScores} className="mt-6 z-10 flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors text-sm font-semibold py-2 px-4 rounded-lg hover:bg-red-50"><Trash2 size={16} /> Reset Scores</button>
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<CatTicTacToe />);
+        }
     </script>
 </body>
 </html>
-
 
