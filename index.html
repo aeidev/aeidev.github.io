@@ -1,23 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="transition-colors duration-300">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Purr-fect Tic-Tac-Toe</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
 
         body {
             font-family: 'Fredoka', sans-serif;
-            overflow: hidden; /* Prevent scrolling during play */
-            touch-action: manipulation; /* Improve touch response */
+            overflow: hidden;
+            touch-action: manipulation;
         }
 
         /* --- Animations --- */
-
-        /* Pop In for Icons */
         @keyframes popIn {
             0% { transform: scale(0) rotate(-20deg); opacity: 0; }
             80% { transform: scale(1.1) rotate(5deg); }
@@ -29,7 +32,36 @@
             filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
         }
 
-        /* Jagged Scratch Animation */
+        /* --- EXCITING SCRATCH EFFECTS --- */
+
+        /* 1. Board Shake */
+        .shake-impact {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 1px, 0); }
+            20%, 80% { transform: translate3d(4px, -2px, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 3px, 0); }
+            40%, 60% { transform: translate3d(6px, -3px, 0); }
+        }
+
+        /* 2. Flash Overlay */
+        @keyframes flashFade {
+            0% { opacity: 0.6; }
+            100% { opacity: 0; }
+        }
+
+        .flash-overlay {
+            position: absolute;
+            inset: 0;
+            background: white;
+            pointer-events: none;
+            z-index: 60;
+            animation: flashFade 0.3s ease-out forwards;
+        }
+
+        /* 3. Scratch Lines */
         .scratch-line {
             position: absolute;
             pointer-events: none;
@@ -40,23 +72,30 @@
         .scratch-path {
             stroke-dasharray: 1000;
             stroke-dashoffset: 1000;
-            animation: scratchDraw 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-            stroke: #1a1a1a; /* Dark Charcoal/Black */
+            animation: scratchDraw 0.15s cubic-bezier(0.05, 0.7, 0.1, 1) forwards;
+            stroke: #1a1a1a;
             stroke-linecap: round;
             stroke-linejoin: round;
             fill: none;
-            opacity: 0.9;
-            filter: drop-shadow(1px 1px 1px rgba(255,255,255,0.4)); /* Slight highlight for depth */
+            opacity: 0.95;
+            filter: drop-shadow(2px 2px 0px rgba(255,255,255,0.5)) drop-shadow(0 0 5px rgba(0,0,0,0.5));
         }
 
         @keyframes scratchDraw {
             to { stroke-dashoffset: 0; }
         }
 
-        /* Modal Backdrop Blur */
-        .modal-backdrop {
-            backdrop-filter: blur(4px);
+        /* 4. Particles */
+        .particle {
+            position: absolute;
+            background: #222;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 55;
+            opacity: 0;
         }
+
+        .modal-backdrop { backdrop-filter: blur(4px); }
 
         /* Theme Gradients */
         .theme-orange { background: linear-gradient(135deg, #fceabb 0%, #f8b500 100%); }
@@ -64,114 +103,114 @@
         .theme-calico { background: linear-gradient(135deg, #ffffff 0%, #dcdcdc 50%, #dba469 100%); }
         .theme-siamese { background: linear-gradient(135deg, #e6d0b3 0%, #6f4e37 100%); color: #3e2723; }
         .theme-forest { background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); color: #1b5e20; }
+        .theme-dark { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); color: #e5e7eb; }
 
-        .cell {
-            transition: all 0.2s;
-        }
-        .cell:active {
-            transform: scale(0.95);
-        }
+        .cell { transition: all 0.2s; }
+        .cell:active { transform: scale(0.95); }
 
-        /* Color Picker Styles */
+        /* Customization UI */
+        .color-btn { transition: transform 0.2s; border: 2px solid transparent; }
         .color-btn.selected {
-            transform: scale(1.2);
-            border: 2px solid white;
+            transform: scale(1.25);
+            border-color: white;
             box-shadow: 0 0 0 2px currentColor;
         }
+        .icon-btn { transition: all 0.2s; opacity: 0.6; }
+        .icon-btn:hover { opacity: 0.8; }
         .icon-btn.selected {
-            background-color: rgba(0,0,0,0.1);
+            background-color: rgba(255,255,255,0.5);
             transform: scale(1.1);
+            opacity: 1;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+        }
+        
+        /* Dark Mode UI Overrides */
+        .dark .icon-btn.selected {
+            background-color: rgba(255,255,255,0.2);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
         }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col items-center justify-center select-none transition-colors duration-500 theme-orange" id="app-body">
 
+    <!-- UI Dark Mode Toggle -->
+    <button onclick="toggleDarkMode()" class="fixed top-4 right-4 z-50 w-12 h-12 rounded-full bg-white/30 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-110 text-gray-800 dark:text-yellow-300 dark:bg-black/40 border border-white/20" aria-label="Toggle Dark Mode">
+        <i class="fas fa-moon text-xl dark:hidden"></i>
+        <i class="fas fa-sun text-xl hidden dark:block"></i>
+    </button>
+
     <!-- SETUP SCREEN -->
-    <div id="setup-screen" class="w-full max-w-lg p-6 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col gap-5 m-4 animate-fade-in text-gray-800 h-[90vh] overflow-y-auto">
-        <div class="text-center">
-            <h1 class="text-3xl font-bold mb-1"><i class="fas fa-cat mr-2"></i>Cat Tac Toe</h1>
-            <p class="text-xs opacity-75">Customize your cats!</p>
+    <div id="setup-screen" class="w-full max-w-lg p-6 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col gap-6 m-4 animate-fade-in text-gray-800 dark:text-gray-100 h-[95vh] overflow-y-auto transition-colors duration-300">
+        <div class="text-center shrink-0 mt-2">
+            <h1 class="text-4xl font-bold mb-1 tracking-tight"><i class="fas fa-cat mr-2"></i>Cat Tac Toe</h1>
+            <p class="text-sm font-medium opacity-75">Customize your cats!</p>
         </div>
 
         <!-- Mode Selection -->
-        <div class="flex bg-gray-200 p-1 rounded-xl shrink-0">
-            <button onclick="setMode('pvp')" id="btn-pvp" class="flex-1 py-2 rounded-lg font-bold bg-white shadow-sm transition-all text-sm">Vs Friend</button>
-            <button onclick="setMode('ai')" id="btn-ai" class="flex-1 py-2 rounded-lg font-bold text-gray-500 transition-all text-sm">Vs CatBot</button>
+        <div class="flex bg-gray-200 dark:bg-gray-800 p-1.5 rounded-2xl shrink-0 transition-colors">
+            <button onclick="setMode('pvp')" id="btn-pvp" class="flex-1 py-3 rounded-xl font-bold bg-white dark:bg-gray-700 shadow-sm transition-all text-base">Vs Friend</button>
+            <button onclick="setMode('ai')" id="btn-ai" class="flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 transition-all text-base">Vs CatBot</button>
         </div>
 
         <!-- PLAYER 1 CUSTOMIZATION -->
-        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-            <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-bold uppercase tracking-wider text-blue-800">Player 1</label>
-                <div class="text-xl text-blue-600" id="p1-preview"><i class="fas fa-cat"></i></div>
+        <div class="bg-blue-50/80 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-800 shrink-0 transition-colors">
+            <div class="flex justify-between items-center mb-3">
+                <label class="text-sm font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">Player 1</label>
+                <div class="text-3xl transition-all duration-300" id="p1-preview"></div>
             </div>
-            <input type="text" id="p1-name" value="You" class="w-full bg-white border border-blue-200 rounded-lg px-3 py-1 mb-3 text-sm focus:ring-2 focus:ring-blue-400 outline-none" placeholder="Name">
+            <input type="text" id="p1-name" value="You" class="w-full bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-xl px-4 py-2 mb-4 text-base font-semibold focus:ring-2 focus:ring-blue-400 outline-none transition-colors" placeholder="Name">
             
-            <!-- P1 Controls -->
-            <div class="flex gap-4">
-                <!-- Color Picker -->
-                <div class="flex gap-2 flex-wrap">
-                    <button onclick="updatePlayerConfig(1, 'color', 'text-blue-600')" class="w-6 h-6 rounded-full bg-blue-600 color-btn selected p1-color" data-color="text-blue-600"></button>
-                    <button onclick="updatePlayerConfig(1, 'color', 'text-orange-500')" class="w-6 h-6 rounded-full bg-orange-500 color-btn p1-color" data-color="text-orange-500"></button>
-                    <button onclick="updatePlayerConfig(1, 'color', 'text-purple-600')" class="w-6 h-6 rounded-full bg-purple-600 color-btn p1-color" data-color="text-purple-600"></button>
-                    <button onclick="updatePlayerConfig(1, 'color', 'text-gray-800')" class="w-6 h-6 rounded-full bg-gray-800 color-btn p1-color" data-color="text-gray-800"></button>
+            <div class="flex flex-col gap-4">
+                <div class="flex gap-3 flex-wrap justify-center" id="p1-colors">
+                    <!-- Colors injected by JS -->
                 </div>
-                <!-- Icon Picker -->
-                <div class="flex gap-2 ml-auto">
-                    <button onclick="updatePlayerConfig(1, 'icon', 'fa-cat')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn selected p1-icon" data-icon="fa-cat"><i class="fas fa-cat"></i></button>
-                    <button onclick="updatePlayerConfig(1, 'icon', 'fa-paw')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn p1-icon" data-icon="fa-paw"><i class="fas fa-paw"></i></button>
+                <div class="flex gap-3 justify-center" id="p1-icons">
+                    <!-- Icons injected by JS -->
                 </div>
             </div>
         </div>
 
         <!-- PLAYER 2 CUSTOMIZATION -->
-        <div class="bg-red-50/50 p-4 rounded-xl border border-red-100">
-            <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-bold uppercase tracking-wider text-red-800" id="p2-label">Player 2</label>
-                <div class="text-xl text-red-500 transform -scale-x-100" id="p2-preview"><i class="fas fa-cat"></i></div>
+        <div class="bg-red-50/80 dark:bg-red-900/20 p-5 rounded-2xl border border-red-100 dark:border-red-800 shrink-0 transition-colors">
+            <div class="flex justify-between items-center mb-3">
+                <label class="text-sm font-bold uppercase tracking-wider text-red-800 dark:text-red-300" id="p2-label">Player 2</label>
+                <div class="text-3xl transition-all duration-300 transform -scale-x-100" id="p2-preview"></div>
             </div>
             
-            <div class="flex gap-2 mb-3">
-                <input type="text" id="p2-name" value="Opponent" class="flex-1 bg-white border border-red-200 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-red-400 outline-none" placeholder="Name">
-                 <select id="ai-difficulty" class="hidden bg-white border border-red-200 rounded-lg px-2 text-xs font-bold focus:ring-2 focus:ring-red-400 outline-none">
+            <div class="flex gap-3 mb-4">
+                <input type="text" id="p2-name" value="Opponent" class="flex-1 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-700 rounded-xl px-4 py-2 text-base font-semibold focus:ring-2 focus:ring-red-400 outline-none transition-colors" placeholder="Name">
+                 <select id="ai-difficulty" class="hidden bg-white dark:bg-gray-800 border border-red-200 dark:border-red-700 rounded-xl px-2 text-sm font-bold focus:ring-2 focus:ring-red-400 outline-none transition-colors">
                     <option value="easy">Easy</option>
                     <option value="medium" selected>Med</option>
                     <option value="hard">Hard</option>
                 </select>
             </div>
 
-            <!-- P2 Controls -->
-            <div class="flex gap-4">
-                <!-- Color Picker -->
-                <div class="flex gap-2 flex-wrap">
-                    <button onclick="updatePlayerConfig(2, 'color', 'text-red-500')" class="w-6 h-6 rounded-full bg-red-500 color-btn selected p2-color" data-color="text-red-500"></button>
-                    <button onclick="updatePlayerConfig(2, 'color', 'text-green-600')" class="w-6 h-6 rounded-full bg-green-600 color-btn p2-color" data-color="text-green-600"></button>
-                    <button onclick="updatePlayerConfig(2, 'color', 'text-pink-500')" class="w-6 h-6 rounded-full bg-pink-500 color-btn p2-color" data-color="text-pink-500"></button>
-                    <button onclick="updatePlayerConfig(2, 'color', 'text-black')" class="w-6 h-6 rounded-full bg-black color-btn p2-color" data-color="text-black"></button>
+            <div class="flex flex-col gap-4">
+                <div class="flex gap-3 flex-wrap justify-center" id="p2-colors">
+                    <!-- Colors injected by JS -->
                 </div>
-                <!-- Icon Picker -->
-                <div class="flex gap-2 ml-auto">
-                    <button onclick="updatePlayerConfig(2, 'icon', 'fa-cat')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn selected p2-icon" data-icon="fa-cat"><i class="fas fa-cat"></i></button>
-                    <button onclick="updatePlayerConfig(2, 'icon', 'fa-paw')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn p2-icon" data-icon="fa-paw"><i class="fas fa-paw"></i></button>
-                    <button onclick="updatePlayerConfig(2, 'icon', 'fa-fish')" class="w-8 h-8 rounded-lg flex items-center justify-center icon-btn p2-icon" data-icon="fa-fish"><i class="fas fa-fish"></i></button>
+                <div class="flex gap-3 justify-center" id="p2-icons">
+                    <!-- Icons injected by JS -->
                 </div>
             </div>
         </div>
 
         <!-- Theme Select -->
-        <div>
-            <label class="block text-xs font-bold uppercase tracking-wider mb-2">Board Theme</label>
-            <div class="grid grid-cols-5 gap-2">
-                <button onclick="setTheme('orange')" class="h-10 rounded-lg bg-gradient-to-br from-yellow-200 to-orange-400 ring-2 ring-offset-2 ring-orange-400 transform hover:scale-105 transition-transform"></button>
-                <button onclick="setTheme('void')" class="h-10 rounded-lg bg-gradient-to-br from-gray-700 to-black hover:scale-105 transition-transform"></button>
-                <button onclick="setTheme('calico')" class="h-10 rounded-lg bg-gradient-to-br from-white via-orange-200 to-gray-400 hover:scale-105 transition-transform"></button>
-                <button onclick="setTheme('siamese')" class="h-10 rounded-lg bg-gradient-to-br from-orange-100 to-stone-600 hover:scale-105 transition-transform"></button>
-                <button onclick="setTheme('forest')" class="h-10 rounded-lg bg-gradient-to-br from-lime-200 to-green-600 hover:scale-105 transition-transform"></button>
+        <div class="shrink-0">
+            <label class="block text-sm font-bold uppercase tracking-wider mb-3">Board Theme</label>
+            <div class="grid grid-cols-6 gap-3">
+                <button onclick="setTheme('orange')" class="h-12 rounded-xl bg-gradient-to-br from-yellow-200 to-orange-400 ring-2 ring-offset-2 ring-orange-400 transform hover:scale-105 transition-transform shadow-sm" title="Orange Tabby"></button>
+                <button onclick="setTheme('dark')" class="h-12 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 border border-gray-600 hover:scale-105 transition-transform shadow-sm" title="Dark Board"></button>
+                <button onclick="setTheme('void')" class="h-12 rounded-xl bg-gradient-to-br from-gray-800 to-black hover:scale-105 transition-transform shadow-sm" title="Void"></button>
+                <button onclick="setTheme('calico')" class="h-12 rounded-xl bg-gradient-to-br from-white via-orange-200 to-gray-400 border border-gray-300 hover:scale-105 transition-transform shadow-sm" title="Calico"></button>
+                <button onclick="setTheme('siamese')" class="h-12 rounded-xl bg-gradient-to-br from-orange-100 to-stone-600 border border-stone-400 hover:scale-105 transition-transform shadow-sm" title="Siamese"></button>
+                <button onclick="setTheme('forest')" class="h-12 rounded-xl bg-gradient-to-br from-lime-200 to-green-600 hover:scale-105 transition-transform shadow-sm" title="Forest"></button>
             </div>
         </div>
 
-        <button onclick="startGame()" class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 active:scale-95 transition-all text-lg mt-auto">
-            Start Game
+        <button onclick="startGame()" class="w-full py-4 bg-gray-900 dark:bg-blue-600 text-white font-bold rounded-2xl shadow-xl hover:bg-gray-800 dark:hover:bg-blue-500 active:scale-95 transition-all text-xl mt-4 shrink-0">
+            Start Game <i class="fas fa-play ml-2 text-sm"></i>
         </button>
     </div>
 
@@ -179,25 +218,25 @@
     <div id="game-screen" class="hidden w-full max-w-lg p-4 flex-col items-center h-full justify-between py-8">
         
         <!-- Header -->
-        <div class="w-full flex justify-between items-center bg-white/30 backdrop-blur-md p-3 rounded-2xl shadow-sm mb-4">
-            <div class="flex items-center gap-2 transition-opacity duration-300" id="p1-badge">
-                <div class="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center text-2xl" id="p1-badge-icon">
+        <div class="w-full flex justify-between items-center bg-white/40 dark:bg-black/40 backdrop-blur-md p-4 rounded-3xl shadow-sm mb-4 transition-colors">
+            <div class="flex items-center gap-3 transition-opacity duration-300" id="p1-badge">
+                <div class="w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl transition-all" id="p1-badge-icon">
                     <!-- Icon injected JS -->
                 </div>
                 <div>
-                    <div class="text-xs font-bold uppercase opacity-75">Player 1</div>
-                    <div class="font-bold text-lg leading-tight truncate max-w-[80px]" id="disp-p1-name">Name</div>
+                    <div class="text-xs font-bold uppercase opacity-75 dark:text-gray-300">Player 1</div>
+                    <div class="font-bold text-xl leading-tight truncate max-w-[90px] dark:text-white" id="disp-p1-name">Name</div>
                 </div>
             </div>
 
-            <div class="text-xl font-bold opacity-50 italic">VS</div>
+            <div class="text-2xl font-bold opacity-50 italic dark:text-white/50">VS</div>
 
-            <div class="flex items-center gap-2 transition-opacity duration-300 opacity-50" id="p2-badge">
+            <div class="flex items-center gap-3 transition-opacity duration-300 opacity-50" id="p2-badge">
                 <div class="text-right">
-                    <div class="text-xs font-bold uppercase opacity-75">Player 2</div>
-                    <div class="font-bold text-lg leading-tight truncate max-w-[80px]" id="disp-p2-name">Name</div>
+                    <div class="text-xs font-bold uppercase opacity-75 dark:text-gray-300">Player 2</div>
+                    <div class="font-bold text-xl leading-tight truncate max-w-[90px] dark:text-white" id="disp-p2-name">Name</div>
                 </div>
-                <div class="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center text-2xl transform -scale-x-100" id="p2-badge-icon">
+                <div class="w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl transition-all transform -scale-x-100" id="p2-badge-icon">
                     <!-- Icon injected JS -->
                 </div>
             </div>
@@ -206,7 +245,7 @@
         <!-- Board Wrapper -->
         <div class="relative w-full aspect-square max-w-sm">
             <!-- Grid -->
-            <div class="grid grid-cols-3 grid-rows-3 w-full h-full bg-white/40 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden gap-2 p-3" id="board">
+            <div class="grid grid-cols-3 grid-rows-3 w-full h-full bg-white/40 dark:bg-black/20 backdrop-blur-sm rounded-[2rem] shadow-2xl overflow-hidden gap-3 p-4 transition-colors" id="board">
                 <!-- Cells generated by JS -->
             </div>
             
@@ -216,10 +255,10 @@
 
         <!-- Footer / Restart -->
         <div class="mt-8 flex gap-4">
-            <button onclick="resetBoard()" class="px-6 py-2 bg-white/20 hover:bg-white/40 backdrop-blur rounded-full font-bold shadow-sm transition-all text-inherit">
+            <button onclick="resetBoard()" class="px-8 py-3 bg-white/20 hover:bg-white/40 dark:bg-black/30 dark:hover:bg-black/50 backdrop-blur rounded-full font-bold shadow-sm transition-all text-inherit dark:text-white text-lg">
                 <i class="fas fa-redo-alt mr-2"></i> Restart
             </button>
-            <button onclick="toMenu()" class="px-6 py-2 bg-white/20 hover:bg-white/40 backdrop-blur rounded-full font-bold shadow-sm transition-all text-inherit">
+            <button onclick="toMenu()" class="px-8 py-3 bg-white/20 hover:bg-white/40 dark:bg-black/30 dark:hover:bg-black/50 backdrop-blur rounded-full font-bold shadow-sm transition-all text-inherit dark:text-white text-lg">
                 <i class="fas fa-home mr-2"></i> Menu
             </button>
         </div>
@@ -227,18 +266,18 @@
 
     <!-- WIN MODAL -->
     <div id="win-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop bg-black/40 px-4">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center transform scale-90 opacity-0 transition-all duration-300" id="modal-content">
-            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-5xl relative overflow-hidden" id="modal-icon-container">
+        <div class="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl p-8 max-w-sm w-full text-center transform scale-90 opacity-0 transition-all duration-300 border border-white/20" id="modal-content">
+            <div class="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl relative overflow-hidden transition-colors" id="modal-icon-container">
                 <i class="fas fa-trophy text-yellow-500 relative z-10" id="modal-icon"></i>
             </div>
-            <h2 class="text-4xl font-bold text-gray-800 mb-2" id="modal-title">Winner!</h2>
-            <p class="text-gray-500 mb-6 font-medium" id="modal-msg">Player 1 scratched the board!</p>
+            <h2 class="text-4xl font-bold text-gray-800 dark:text-white mb-2" id="modal-title">Winner!</h2>
+            <p class="text-gray-500 dark:text-gray-400 mb-8 font-medium text-lg" id="modal-msg">Player 1 scratched the board!</p>
             
-            <div class="flex flex-col gap-2">
-                <button onclick="closeModal(); resetBoard();" class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-700 transition-colors shadow-lg">
+            <div class="flex flex-col gap-3">
+                <button onclick="closeModal(); resetBoard();" class="w-full py-4 bg-gray-900 dark:bg-blue-600 text-white font-bold rounded-xl hover:bg-gray-700 dark:hover:bg-blue-500 transition-colors shadow-lg text-lg">
                     Play Again
                 </button>
-                <button onclick="closeModal(); toMenu();" class="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">
+                <button onclick="closeModal(); toMenu();" class="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-lg">
                     Back to Menu
                 </button>
             </div>
@@ -246,7 +285,21 @@
     </div>
 
     <script>
-        /* --- Game State & Config --- */
+        /* --- CONFIG --- */
+        const COLORS = [
+            { bg: 'bg-blue-600', text: 'text-blue-600' },
+            { bg: 'bg-red-500', text: 'text-red-500' },
+            { bg: 'bg-orange-500', text: 'text-orange-500' },
+            { bg: 'bg-green-600', text: 'text-green-600' },
+            { bg: 'bg-purple-600', text: 'text-purple-600' },
+            { bg: 'bg-pink-500', text: 'text-pink-500' },
+            { bg: 'bg-gray-800 dark:bg-gray-400', text: 'text-gray-800 dark:text-gray-300' },
+            { bg: 'bg-black dark:bg-white', text: 'text-black dark:text-white' }
+        ];
+
+        // REMOVED non-cat icons
+        const ICONS = ['fa-cat', 'fa-paw'];
+
         const state = {
             mode: 'pvp',
             difficulty: 'medium',
@@ -255,7 +308,8 @@
             active: false,
             p1: { name: 'Player 1', iconName: 'fa-cat', colorClass: 'text-blue-600' },
             p2: { name: 'Player 2', iconName: 'fa-cat', colorClass: 'text-red-500' },
-            theme: 'orange'
+            theme: 'orange',
+            isDark: false
         };
 
         const winningCombos = [
@@ -273,39 +327,120 @@
         const winModal = document.getElementById('win-modal');
         const modalContent = document.getElementById('modal-content');
 
-        /* --- Initialization --- */
+        /* --- Initialization & UI Builders --- */
         function init() {
+            renderCustomizationUI(1);
+            renderCustomizationUI(2);
+            renderPlayerSelection(1);
+            renderPlayerSelection(2);
+            
+            // Build Grid
             boardEl.innerHTML = '';
             for (let i = 0; i < 9; i++) {
                 const cell = document.createElement('div');
-                cell.className = 'bg-white/60 hover:bg-white/80 rounded-2xl flex items-center justify-center cursor-pointer text-5xl shadow-sm cell relative overflow-hidden';
+                cell.className = 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-2xl flex items-center justify-center cursor-pointer text-5xl shadow-sm cell relative overflow-hidden transition-colors';
                 cell.dataset.index = i;
                 cell.addEventListener('click', () => handleCellClick(i));
                 boardEl.appendChild(cell);
             }
         }
-        init();
 
-        /* --- Setup Logic --- */
-        function updatePlayerConfig(playerNum, type, value) {
-            const playerKey = playerNum === 1 ? 'p1' : 'p2';
-            const propKey = type === 'icon' ? 'iconName' : 'colorClass';
-            state[playerKey][propKey] = value;
-
-            // Update UI visual selection
-            const btnClass = playerNum === 1 ? `.p1-${type}` : `.p2-${type}`;
-            const btns = document.querySelectorAll(btnClass);
-            btns.forEach(btn => {
-                if (btn.dataset[type] === value) btn.classList.add('selected');
-                else btn.classList.remove('selected');
-            });
-
-            // Update Preview Icon
-            const previewEl = document.getElementById(`p${playerNum}-preview`);
-            previewEl.className = `text-xl ${state[playerKey].colorClass} ${playerNum === 2 ? 'transform -scale-x-100' : ''}`;
-            previewEl.innerHTML = `<i class="fas ${state[playerKey].iconName}"></i>`;
+        /* --- UI Logic --- */
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            state.isDark = !state.isDark;
+            
+            if (state.isDark) {
+                html.classList.add('dark');
+            } else {
+                html.classList.remove('dark');
+            }
+            
+            // Re-render colors in case they rely on dark mode classes
+            renderCustomizationUI(1);
+            renderCustomizationUI(2);
+            renderPlayerSelection(1);
+            renderPlayerSelection(2);
         }
 
+        function renderCustomizationUI(pNum) {
+            const colorContainer = document.getElementById(`p${pNum}-colors`);
+            const iconContainer = document.getElementById(`p${pNum}-icons`);
+            
+            // Render Colors
+            colorContainer.innerHTML = COLORS.map(c => `
+                <button onclick="selectColor(${pNum}, '${c.text}')" 
+                    class="w-8 h-8 rounded-full ${c.bg} color-btn p${pNum}-color shadow-sm" 
+                    data-color="${c.text}"></button>
+            `).join('');
+
+            // Render Icons
+            iconContainer.innerHTML = ICONS.map(icon => `
+                <button onclick="selectIcon(${pNum}, '${icon}')" 
+                    class="w-10 h-10 rounded-xl flex items-center justify-center icon-btn p${pNum}-icon text-lg" 
+                    data-icon="${icon}"><i class="fas ${icon}"></i></button>
+            `).join('');
+        }
+
+        function renderPlayerSelection(pNum) {
+            const playerState = pNum === 1 ? state.p1 : state.p2;
+            
+            // Update Colors UI
+            document.querySelectorAll(`.p${pNum}-color`).forEach(btn => {
+                if (btn.dataset.color === playerState.colorClass) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+
+            // Update Icons UI
+            document.querySelectorAll(`.p${pNum}-icon`).forEach(btn => {
+                if (btn.dataset.icon === playerState.iconName) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+
+            // Update Preview
+            const preview = document.getElementById(`p${pNum}-preview`);
+            preview.className = `text-4xl transition-all duration-300 ${playerState.colorClass} ${pNum === 2 ? 'transform -scale-x-100' : ''}`;
+            preview.innerHTML = `<i class="fas ${playerState.iconName}"></i>`;
+        }
+
+        /* --- Selection Logic --- */
+        function selectColor(pNum, colorClass) {
+            const currentPlayer = pNum === 1 ? state.p1 : state.p2;
+            const otherPlayer = pNum === 1 ? state.p2 : state.p1;
+            
+            currentPlayer.colorClass = colorClass;
+            // Check Collision
+            if (currentPlayer.colorClass === otherPlayer.colorClass && currentPlayer.iconName === otherPlayer.iconName) {
+                otherPlayer.colorClass = getNextAvailableColor(currentPlayer.colorClass);
+                renderPlayerSelection(pNum === 1 ? 2 : 1);
+            }
+            renderPlayerSelection(pNum);
+        }
+
+        function selectIcon(pNum, iconName) {
+            const currentPlayer = pNum === 1 ? state.p1 : state.p2;
+            const otherPlayer = pNum === 1 ? state.p2 : state.p1;
+            currentPlayer.iconName = iconName;
+            // Check Collision
+            if (currentPlayer.colorClass === otherPlayer.colorClass && currentPlayer.iconName === otherPlayer.iconName) {
+                otherPlayer.colorClass = getNextAvailableColor(currentPlayer.colorClass);
+                renderPlayerSelection(pNum === 1 ? 2 : 1);
+            }
+            renderPlayerSelection(pNum);
+        }
+
+        function getNextAvailableColor(takenColor) {
+            const next = COLORS.find(c => c.text !== takenColor);
+            return next ? next.text : takenColor;
+        }
+
+        /* --- Menu Logic --- */
         function setMode(mode) {
             state.mode = mode;
             const btnPvp = document.getElementById('btn-pvp');
@@ -315,15 +450,15 @@
             const p2Label = document.getElementById('p2-label');
 
             if (mode === 'pvp') {
-                btnPvp.className = "flex-1 py-2 rounded-lg font-bold bg-white shadow-sm text-gray-800 transition-all text-sm";
-                btnAi.className = "flex-1 py-2 rounded-lg font-bold text-gray-500 hover:bg-gray-100 transition-all text-sm";
+                btnPvp.className = "flex-1 py-3 rounded-xl font-bold bg-white dark:bg-gray-700 shadow-sm transition-all text-base dark:text-white";
+                btnAi.className = "flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all text-base";
                 p2Input.style.display = 'block';
                 aiDiff.style.display = 'none';
                 p2Label.innerText = "Player 2";
                 p2Input.value = "Opponent";
             } else {
-                btnAi.className = "flex-1 py-2 rounded-lg font-bold bg-white shadow-sm text-gray-800 transition-all text-sm";
-                btnPvp.className = "flex-1 py-2 rounded-lg font-bold text-gray-500 hover:bg-gray-100 transition-all text-sm";
+                btnAi.className = "flex-1 py-3 rounded-xl font-bold bg-white dark:bg-gray-700 shadow-sm transition-all text-base dark:text-white";
+                btnPvp.className = "flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all text-base";
                 p2Input.style.display = 'none';
                 aiDiff.style.display = 'block';
                 p2Label.innerText = "Bot Lvl";
@@ -337,7 +472,7 @@
             appBody.classList.add(`theme-${theme}`);
             
             const buttons = document.querySelectorAll('#setup-screen button[onclick^="setTheme"]');
-            buttons.forEach(btn => btn.classList.remove('ring-2', 'ring-offset-2', 'ring-orange-400', 'ring-gray-500'));
+            buttons.forEach(btn => btn.classList.remove('ring-2', 'ring-offset-2', 'ring-orange-400', 'ring-gray-500', 'border-white'));
         }
 
         function startGame() {
@@ -356,10 +491,10 @@
             document.getElementById('disp-p2-name').innerText = state.p2.name;
 
             // Set Header Badges
-            document.getElementById('p1-badge-icon').className = `w-12 h-12 bg-white rounded-full shadow flex items-center justify-center text-2xl ${state.p1.colorClass}`;
+            document.getElementById('p1-badge-icon').className = `w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl ${state.p1.colorClass}`;
             document.getElementById('p1-badge-icon').innerHTML = `<i class="fas ${state.p1.iconName}"></i>`;
 
-            document.getElementById('p2-badge-icon').className = `w-12 h-12 bg-white rounded-full shadow flex items-center justify-center text-2xl transform -scale-x-100 ${state.p2.colorClass}`;
+            document.getElementById('p2-badge-icon').className = `w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl transform -scale-x-100 ${state.p2.colorClass}`;
             document.getElementById('p2-badge-icon').innerHTML = `<i class="fas ${state.p2.iconName}"></i>`;
 
             setupScreen.classList.add('hidden');
@@ -382,9 +517,11 @@
             state.active = true;
             scratchLayer.innerHTML = '';
             
+            const board = document.getElementById('board');
+            board.classList.remove('shake-impact');
+
             Array.from(boardEl.children).forEach(cell => {
                 cell.innerHTML = '';
-                cell.classList.remove('bg-gray-50');
             });
 
             updateTurnIndicator();
@@ -430,7 +567,6 @@
             const playerConfig = playerIdx === 0 ? state.p1 : state.p2;
             
             const cell = boardEl.children[index];
-            // Render Icon: Flip if Player 2
             const flipClass = playerIdx === 1 ? 'transform -scale-x-100' : '';
             cell.innerHTML = `<i class="fas ${playerConfig.iconName} ${playerConfig.colorClass} ${flipClass} game-icon"></i>`;
             
@@ -471,11 +607,23 @@
             }
         }
 
-        /* --- Visuals: Realistic Cat Scratch --- */
         function drawScratch(combo) {
+            const board = document.getElementById('board');
+            
+            // 1. Trigger Screen Shake
+            board.classList.remove('shake-impact');
+            void board.offsetWidth; // trigger reflow
+            board.classList.add('shake-impact');
+
+            // 2. Add Flash Overlay
+            const flash = document.createElement('div');
+            flash.className = 'flash-overlay';
+            board.parentElement.appendChild(flash);
+            setTimeout(() => flash.remove(), 350);
+
+            // 3. Calc Coords for Scratches
             const cell0 = boardEl.children[combo[0]];
             const cell2 = boardEl.children[combo[2]];
-
             const rect0 = cell0.getBoundingClientRect();
             const rect2 = cell2.getBoundingClientRect();
             const parentRect = boardEl.getBoundingClientRect();
@@ -487,7 +635,7 @@
 
             const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
 
-            // Generate 3 jagged lines
+            // 4. Draw Lines & Spawn Particles
             for(let i=-1; i<=1; i++) {
                 const offset = i * 14; 
                 
@@ -501,38 +649,77 @@
 
                 const path = document.createElementNS(svgNS, "path");
                 
-                // Coordinates for start/end
                 const startX = x1 + (offset * Math.sin(angle * Math.PI/180));
                 const startY = y1 - (offset * Math.cos(angle * Math.PI/180));
                 const endX = x2 + (offset * Math.sin(angle * Math.PI/180));
                 const endY = y2 - (offset * Math.cos(angle * Math.PI/180));
 
-                // Create Jaggedness
-                // We create a path with a few intermediate random points to simulate tearing
-                const segmentCount = 5;
+                const segmentCount = 6;
                 let d = `M ${startX} ${startY}`;
                 
                 const dx = (endX - startX) / segmentCount;
                 const dy = (endY - startY) / segmentCount;
 
+                // Create Jagged Path
                 for (let j = 1; j < segmentCount; j++) {
-                    const jitter = (Math.random() - 0.5) * 6; // Jitter magnitude
+                    const jitter = (Math.random() - 0.5) * 8;
                     const currX = startX + dx * j + jitter;
                     const currY = startY + dy * j + jitter;
                     d += ` L ${currX} ${currY}`;
+                    
+                    // Spawn Particles along the path
+                    if (Math.random() > 0.3) {
+                        spawnParticle(currX, currY, angle);
+                    }
                 }
                 d += ` L ${endX} ${endY}`;
                 
                 path.setAttribute("d", d);
-                path.setAttribute("stroke-width", Math.random() * 2 + 3); // Varying width 3-5px
+                path.setAttribute("stroke-width", Math.random() * 2 + 3);
                 path.setAttribute("class", "scratch-path");
-                
-                // Stagger timing
-                path.style.animationDelay = `${Math.abs(i) * 40}ms`;
+                // Stagger timing very slightly
+                path.style.animationDelay = `${Math.abs(i) * 30}ms`;
 
                 svg.appendChild(path);
                 scratchLayer.appendChild(svg);
             }
+        }
+
+        function spawnParticle(x, y, angleDeg) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            
+            // Random size
+            const size = Math.random() * 4 + 2;
+            p.style.width = `${size}px`;
+            p.style.height = `${size}px`;
+            p.style.left = `${x}px`;
+            p.style.top = `${y}px`;
+
+            // Calculate velocity: Perpendicular to scratch + random spread
+            const perpAngle = angleDeg + 90 + (Math.random() * 60 - 30); 
+            const speed = Math.random() * 100 + 50; // Distance to fly
+            
+            const rad = perpAngle * Math.PI / 180;
+            const destX = Math.cos(rad) * speed;
+            const destY = Math.sin(rad) * speed;
+
+            // Random rotation for the particle itself
+            const rot = Math.random() * 360;
+
+            p.style.transition = 'all 0.5s ease-out';
+            
+            scratchLayer.appendChild(p);
+
+            // Trigger animation in next frame
+            requestAnimationFrame(() => {
+                p.style.transform = `translate(${destX}px, ${destY}px) rotate(${rot}deg)`;
+                p.style.opacity = '1';
+                setTimeout(() => {
+                    p.style.opacity = '0';
+                    setTimeout(() => p.remove(), 200);
+                }, 200);
+            });
         }
 
         /* --- Modal Logic --- */
@@ -548,20 +735,18 @@
             const title = document.getElementById('modal-title');
             const msg = document.getElementById('modal-msg');
             const icon = document.getElementById('modal-icon');
-            const container = document.getElementById('modal-icon-container');
 
             if (winnerIdx === -1) {
                 title.innerText = "It's a Draw!";
-                title.className = "text-4xl font-bold text-gray-600 mb-2";
+                title.className = "text-4xl font-bold text-gray-600 dark:text-gray-200 mb-2";
                 msg.innerText = "No scratches today.";
-                icon.className = "fas fa-handshake text-gray-500 relative z-10";
+                icon.className = "fas fa-handshake text-gray-500 dark:text-gray-400 relative z-10";
             } else {
                 const winnerConfig = winnerIdx === 0 ? state.p1 : state.p2;
                 title.innerText = "Victory!";
-                title.className = "text-4xl font-bold text-gray-800 mb-2";
+                title.className = "text-4xl font-bold text-gray-800 dark:text-white mb-2";
                 msg.innerText = `${winnerConfig.name} is the superior cat!`;
                 
-                // Show winner icon
                 icon.className = `fas ${winnerConfig.iconName} ${winnerConfig.colorClass} relative z-10`;
                 if(winnerIdx === 1) icon.classList.add('transform', '-scale-x-100');
             }
@@ -589,7 +774,6 @@
                  if (Math.random() < 0.2) {
                     return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
                  }
-                 // Block/Win logic
                  for (let i of emptyIndices) {
                      board[i] = 1;
                      if (checkWin(board, 1)) { board[i] = null; return i; }
@@ -603,7 +787,6 @@
                  return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
             }
 
-            // Hard
             let bestScore = -Infinity;
             let move = -1;
             for (let i of emptyIndices) {
@@ -649,6 +832,8 @@
                 return bestScore;
             }
         }
+
+        init();
     </script>
 </body>
 </html>
