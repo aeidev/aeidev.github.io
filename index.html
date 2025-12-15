@@ -20,6 +20,27 @@
             touch-action: manipulation;
         }
 
+        /* --- Background Floating Paws --- */
+        .bg-paw {
+            position: absolute;
+            color: rgba(255,255,255,0.15);
+            font-size: 3rem;
+            /* Animation defined inline in JS for random timing, but base props here */
+            z-index: -1;
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+        .dark .bg-paw {
+            color: rgba(255,255,255,0.05);
+        }
+
+        @keyframes floatPaw {
+            0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) rotate(20deg); opacity: 0; }
+        }
+
         /* --- Animations --- */
         @keyframes popIn {
             0% { transform: scale(0) rotate(-20deg); opacity: 0; }
@@ -32,43 +53,17 @@
             filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
         }
 
-        /* --- EXCITING SCRATCH EFFECTS --- */
-
-        /* 1. Board Shake */
-        .shake-impact {
-            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
-
+        /* --- Scratch Effects --- */
+        .shake-impact { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
             10%, 90% { transform: translate3d(-2px, 1px, 0); }
             20%, 80% { transform: translate3d(4px, -2px, 0); }
             30%, 50%, 70% { transform: translate3d(-6px, 3px, 0); }
             40%, 60% { transform: translate3d(6px, -3px, 0); }
         }
-
-        /* 2. Flash Overlay */
-        @keyframes flashFade {
-            0% { opacity: 0.6; }
-            100% { opacity: 0; }
-        }
-
-        .flash-overlay {
-            position: absolute;
-            inset: 0;
-            background: white;
-            pointer-events: none;
-            z-index: 60;
-            animation: flashFade 0.3s ease-out forwards;
-        }
-
-        /* 3. Scratch Lines */
-        .scratch-line {
-            position: absolute;
-            pointer-events: none;
-            z-index: 50;
-            overflow: visible;
-        }
-
+        @keyframes flashFade { 0% { opacity: 0.6; } 100% { opacity: 0; } }
+        .flash-overlay { position: absolute; inset: 0; background: white; pointer-events: none; z-index: 60; animation: flashFade 0.3s ease-out forwards; }
+        .scratch-line { position: absolute; pointer-events: none; z-index: 50; overflow: visible; }
         .scratch-path {
             stroke-dasharray: 1000;
             stroke-dashoffset: 1000;
@@ -80,149 +75,150 @@
             opacity: 0.95;
             filter: drop-shadow(2px 2px 0px rgba(255,255,255,0.5)) drop-shadow(0 0 5px rgba(0,0,0,0.5));
         }
-
-        @keyframes scratchDraw {
-            to { stroke-dashoffset: 0; }
-        }
-
-        /* 4. Particles */
-        .particle {
-            position: absolute;
-            background: #222;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 55;
-            opacity: 0;
-        }
+        @keyframes scratchDraw { to { stroke-dashoffset: 0; } }
+        .particle { position: absolute; background: #222; border-radius: 50%; pointer-events: none; z-index: 55; opacity: 0; }
 
         .modal-backdrop { backdrop-filter: blur(4px); }
 
-        /* Theme Gradients */
+        /* --- Themes --- */
         .theme-orange { background: linear-gradient(135deg, #fceabb 0%, #f8b500 100%); }
         .theme-void { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); color: white; }
-        .theme-calico { background: linear-gradient(135deg, #ffffff 0%, #dcdcdc 50%, #dba469 100%); }
-        .theme-siamese { background: linear-gradient(135deg, #e6d0b3 0%, #6f4e37 100%); color: #3e2723; }
         .theme-forest { background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); color: #1b5e20; }
         .theme-dark { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); color: #e5e7eb; }
+        
+        .theme-galaxy { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .theme-candy { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); color: #880e4f; }
+        .theme-ocean { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: #01579b; }
+        .theme-cyber { background: linear-gradient(135deg, #111 0%, #2b32b2 100%); color: #00ffea; }
+        .theme-mint { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); color: #004d40; }
 
         .cell { transition: all 0.2s; }
         .cell:active { transform: scale(0.95); }
 
         /* Customization UI */
         .color-btn { transition: transform 0.2s; border: 2px solid transparent; }
-        .color-btn.selected {
-            transform: scale(1.25);
-            border-color: white;
-            box-shadow: 0 0 0 2px currentColor;
-        }
+        .color-btn.selected { transform: scale(1.25); border-color: white; box-shadow: 0 0 0 2px currentColor; }
         .icon-btn { transition: all 0.2s; opacity: 0.6; }
         .icon-btn:hover { opacity: 0.8; }
-        .icon-btn.selected {
-            background-color: rgba(255,255,255,0.5);
-            transform: scale(1.1);
-            opacity: 1;
-            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+        .icon-btn.selected { background-color: rgba(255,255,255,0.5); transform: scale(1.1); opacity: 1; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); }
+        .dark .icon-btn.selected { background-color: rgba(255,255,255,0.2); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3); }
+
+        /* Theme Buttons Selection */
+        .theme-btn { transition: all 0.2s; border: 2px solid transparent; opacity: 0.8; }
+        .theme-btn:hover { transform: scale(1.1); opacity: 1; }
+        .theme-btn.selected { transform: scale(1.15); border-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.2); opacity: 1; z-index: 10; }
+        .dark .theme-btn.selected { border-color: #e5e7eb; }
+
+        /* Bounce Animation for Menu Header */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
         }
-        
-        /* Dark Mode UI Overrides */
-        .dark .icon-btn.selected {
-            background-color: rgba(255,255,255,0.2);
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
-        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col items-center justify-center select-none transition-colors duration-500 theme-orange" id="app-body">
+<body class="h-screen w-screen flex flex-col items-center justify-center select-none transition-colors duration-500 theme-orange overflow-hidden relative" id="app-body">
+
+    <!-- Background Paws Container (Fixed to prevent scrolling away) -->
+    <div id="bg-paws" class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <!-- Paws injected by JS -->
+    </div>
 
     <!-- UI Dark Mode Toggle -->
-    <button onclick="toggleDarkMode()" class="fixed top-4 right-4 z-50 w-12 h-12 rounded-full bg-white/30 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-110 text-gray-800 dark:text-yellow-300 dark:bg-black/40 border border-white/20" aria-label="Toggle Dark Mode">
+    <button onclick="toggleDarkMode()" class="fixed top-4 right-4 z-50 w-12 h-12 rounded-full bg-white/30 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-110 text-gray-800 dark:text-yellow-300 dark:bg-black/40 border-2 border-white/40" aria-label="Toggle Dark Mode">
         <i class="fas fa-moon text-xl dark:hidden"></i>
         <i class="fas fa-sun text-xl hidden dark:block"></i>
     </button>
 
     <!-- SETUP SCREEN -->
-    <div id="setup-screen" class="w-full max-w-lg p-6 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col gap-6 m-4 animate-fade-in text-gray-800 dark:text-gray-100 h-[95vh] overflow-y-auto transition-colors duration-300">
-        <div class="text-center shrink-0 mt-2">
-            <h1 class="text-4xl font-bold mb-1 tracking-tight"><i class="fas fa-cat mr-2"></i>Cat Tac Toe</h1>
-            <p class="text-sm font-medium opacity-75">Customize your cats!</p>
-        </div>
-
-        <!-- Mode Selection -->
-        <div class="flex bg-gray-200 dark:bg-gray-800 p-1.5 rounded-2xl shrink-0 transition-colors">
-            <button onclick="setMode('pvp')" id="btn-pvp" class="flex-1 py-3 rounded-xl font-bold bg-white dark:bg-gray-700 shadow-sm transition-all text-base">Vs Friend</button>
-            <button onclick="setMode('ai')" id="btn-ai" class="flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 transition-all text-base">Vs CatBot</button>
-        </div>
-
-        <!-- PLAYER 1 CUSTOMIZATION -->
-        <div class="bg-blue-50/80 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-800 shrink-0 transition-colors">
-            <div class="flex justify-between items-center mb-3">
-                <label class="text-sm font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">Player 1</label>
-                <div class="text-3xl transition-all duration-300" id="p1-preview"></div>
-            </div>
-            <input type="text" id="p1-name" value="You" class="w-full bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-xl px-4 py-2 mb-4 text-base font-semibold focus:ring-2 focus:ring-blue-400 outline-none transition-colors" placeholder="Name">
+    <div class="relative z-10 w-full max-w-lg m-4 h-[90vh] md:h-auto flex flex-col">
+        <div id="setup-screen" class="w-full p-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl flex flex-col gap-5 animate-fade-in text-gray-800 dark:text-gray-100 overflow-y-auto transition-all duration-300 border-4 border-white/50 dark:border-gray-700/50">
             
-            <div class="flex flex-col gap-4">
-                <div class="flex gap-3 flex-wrap justify-center" id="p1-colors">
-                    <!-- Colors injected by JS -->
+            <!-- Menu Header -->
+            <div class="text-center shrink-0">
+                <div class="w-16 h-16 mx-auto bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg mb-2 animate-float text-white text-3xl border-4 border-white dark:border-gray-800">
+                    <i class="fas fa-cat"></i>
                 </div>
-                <div class="flex gap-3 justify-center" id="p1-icons">
-                    <!-- Icons injected by JS -->
+                <h1 class="text-3xl font-bold mb-1 tracking-tight text-gray-900 dark:text-white drop-shadow-sm">Cat Tac Toe</h1>
+            </div>
+
+            <!-- Mode Selection -->
+            <div class="flex bg-gray-200/80 dark:bg-gray-800/80 p-1.5 rounded-2xl shrink-0 transition-colors">
+                <button onclick="setMode('pvp')" id="btn-pvp" class="flex-1 py-3 rounded-xl font-bold bg-white dark:bg-gray-700 shadow-sm transition-all text-sm transform active:scale-95">Vs Friend</button>
+                <button onclick="setMode('ai')" id="btn-ai" class="flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all text-sm transform active:scale-95">Vs CatBot</button>
+            </div>
+
+            <!-- PLAYER 1 CUSTOMIZATION -->
+            <div class="bg-blue-50/80 dark:bg-blue-900/20 p-4 rounded-3xl border-2 border-blue-100 dark:border-blue-800/50 shrink-0 transition-colors relative group hover:border-blue-300 dark:hover:border-blue-700">
+                <div class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-3 py-0.5 rounded-full text-[10px] font-bold text-blue-600 dark:text-blue-400 shadow-sm border border-blue-100 dark:border-blue-900">PLAYER 1</div>
+                
+                <div class="flex items-center gap-3 mb-3 mt-1">
+                    <div class="text-3xl transition-all duration-300 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-800 rounded-xl shadow-sm" id="p1-preview"></div>
+                    <input type="text" id="p1-name" value="You" class="flex-1 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-blue-400 rounded-xl px-4 py-1.5 text-sm font-bold focus:ring-0 outline-none transition-all shadow-sm text-gray-700 dark:text-gray-200" placeholder="Name">
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-2 flex-wrap justify-center" id="p1-colors"></div>
+                    <div class="flex gap-2 justify-center" id="p1-icons"></div>
                 </div>
             </div>
+
+            <!-- PLAYER 2 CUSTOMIZATION -->
+            <div class="bg-red-50/80 dark:bg-red-900/20 p-4 rounded-3xl border-2 border-red-100 dark:border-red-800/50 shrink-0 transition-colors relative group hover:border-red-300 dark:hover:border-red-700">
+                <div class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-3 py-0.5 rounded-full text-[10px] font-bold text-red-600 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-900" id="p2-label">PLAYER 2</div>
+
+                <div class="flex items-center gap-3 mb-3 mt-1">
+                    <div class="text-3xl transition-all duration-300 transform -scale-x-100 w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-800 rounded-xl shadow-sm" id="p2-preview"></div>
+                    <div class="flex-1 flex gap-2">
+                        <input type="text" id="p2-name" value="Opponent" class="flex-1 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-red-400 rounded-xl px-4 py-1.5 text-sm font-bold focus:ring-0 outline-none transition-all shadow-sm text-gray-700 dark:text-gray-200" placeholder="Name">
+                        <select id="ai-difficulty" class="hidden bg-white dark:bg-gray-800 border-2 border-transparent focus:border-red-400 rounded-xl px-2 text-xs font-bold outline-none transition-colors shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                            <option value="easy">Easy</option>
+                            <option value="medium" selected>Med</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-2 flex-wrap justify-center" id="p2-colors"></div>
+                    <div class="flex gap-2 justify-center" id="p2-icons"></div>
+                </div>
+            </div>
+
+            <!-- Theme Select -->
+            <div class="shrink-0 bg-gray-50/50 dark:bg-white/5 p-4 rounded-2xl border border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider opacity-70">Theme</span>
+                </div>
+                <!-- Updated Grid for 10 Themes -->
+                <div class="grid grid-cols-5 gap-2.5">
+                    <button onclick="setTheme('orange', this)" class="theme-btn selected h-8 rounded-full bg-gradient-to-br from-yellow-200 to-orange-400" title="Orange Tabby"></button>
+                    <button onclick="setTheme('dark', this)" class="theme-btn h-8 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border border-gray-600" title="Dark Mode"></button>
+                    <button onclick="setTheme('void', this)" class="theme-btn h-8 rounded-full bg-gradient-to-br from-gray-800 to-black" title="Void"></button>
+                    <button onclick="setTheme('forest', this)" class="theme-btn h-8 rounded-full bg-gradient-to-br from-lime-200 to-green-600" title="Forest"></button>
+                    <button onclick="setTheme('ocean', this)" class="theme-btn h-8 rounded-full bg-gradient-to-br from-blue-300 to-blue-600" title="Ocean"></button>
+                    
+                    <button onclick="setTheme('galaxy', this)" class="theme-btn h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-700" title="Galaxy"></button>
+                    <button onclick="setTheme('candy', this)" class="theme-btn h-8 rounded-full bg-gradient-to-br from-pink-300 to-rose-400" title="Candy"></button>
+                    <button onclick="setTheme('cyber', this)" class="theme-btn h-8 rounded-full bg-gradient-to-br from-gray-900 to-blue-900 border border-cyan-400" title="Cyber"></button>
+                    <button onclick="setTheme('mint', this)" class="theme-btn h-8 rounded-full bg-gradient-to-br from-teal-200 to-emerald-400" title="Mint"></button>
+                    <button onclick="setTheme('calico', this)" class="theme-btn h-8 rounded-full bg-gradient-to-br from-white via-orange-200 to-gray-400 border border-gray-300" title="Calico"></button>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="w-full py-4 bg-gray-900 dark:bg-blue-600 text-white font-bold rounded-2xl shadow-xl hover:bg-gray-800 dark:hover:bg-blue-500 hover:scale-[1.02] active:scale-95 transition-all text-lg mt-2 shrink-0 border-b-4 border-gray-950 dark:border-blue-800">
+                Start Game <i class="fas fa-play ml-2 text-sm"></i>
+            </button>
         </div>
-
-        <!-- PLAYER 2 CUSTOMIZATION -->
-        <div class="bg-red-50/80 dark:bg-red-900/20 p-5 rounded-2xl border border-red-100 dark:border-red-800 shrink-0 transition-colors">
-            <div class="flex justify-between items-center mb-3">
-                <label class="text-sm font-bold uppercase tracking-wider text-red-800 dark:text-red-300" id="p2-label">Player 2</label>
-                <div class="text-3xl transition-all duration-300 transform -scale-x-100" id="p2-preview"></div>
-            </div>
-            
-            <div class="flex gap-3 mb-4">
-                <input type="text" id="p2-name" value="Opponent" class="flex-1 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-700 rounded-xl px-4 py-2 text-base font-semibold focus:ring-2 focus:ring-red-400 outline-none transition-colors" placeholder="Name">
-                 <select id="ai-difficulty" class="hidden bg-white dark:bg-gray-800 border border-red-200 dark:border-red-700 rounded-xl px-2 text-sm font-bold focus:ring-2 focus:ring-red-400 outline-none transition-colors">
-                    <option value="easy">Easy</option>
-                    <option value="medium" selected>Med</option>
-                    <option value="hard">Hard</option>
-                </select>
-            </div>
-
-            <div class="flex flex-col gap-4">
-                <div class="flex gap-3 flex-wrap justify-center" id="p2-colors">
-                    <!-- Colors injected by JS -->
-                </div>
-                <div class="flex gap-3 justify-center" id="p2-icons">
-                    <!-- Icons injected by JS -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Theme Select -->
-        <div class="shrink-0">
-            <label class="block text-sm font-bold uppercase tracking-wider mb-3">Board Theme</label>
-            <div class="grid grid-cols-6 gap-3">
-                <button onclick="setTheme('orange')" class="h-12 rounded-xl bg-gradient-to-br from-yellow-200 to-orange-400 ring-2 ring-offset-2 ring-orange-400 transform hover:scale-105 transition-transform shadow-sm" title="Orange Tabby"></button>
-                <button onclick="setTheme('dark')" class="h-12 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 border border-gray-600 hover:scale-105 transition-transform shadow-sm" title="Dark Board"></button>
-                <button onclick="setTheme('void')" class="h-12 rounded-xl bg-gradient-to-br from-gray-800 to-black hover:scale-105 transition-transform shadow-sm" title="Void"></button>
-                <button onclick="setTheme('calico')" class="h-12 rounded-xl bg-gradient-to-br from-white via-orange-200 to-gray-400 border border-gray-300 hover:scale-105 transition-transform shadow-sm" title="Calico"></button>
-                <button onclick="setTheme('siamese')" class="h-12 rounded-xl bg-gradient-to-br from-orange-100 to-stone-600 border border-stone-400 hover:scale-105 transition-transform shadow-sm" title="Siamese"></button>
-                <button onclick="setTheme('forest')" class="h-12 rounded-xl bg-gradient-to-br from-lime-200 to-green-600 hover:scale-105 transition-transform shadow-sm" title="Forest"></button>
-            </div>
-        </div>
-
-        <button onclick="startGame()" class="w-full py-4 bg-gray-900 dark:bg-blue-600 text-white font-bold rounded-2xl shadow-xl hover:bg-gray-800 dark:hover:bg-blue-500 active:scale-95 transition-all text-xl mt-4 shrink-0">
-            Start Game <i class="fas fa-play ml-2 text-sm"></i>
-        </button>
     </div>
 
     <!-- GAME SCREEN -->
-    <div id="game-screen" class="hidden w-full max-w-lg p-4 flex-col items-center h-full justify-between py-8">
+    <div id="game-screen" class="hidden w-full max-w-lg p-4 flex-col items-center h-full justify-between py-8 z-10">
         
         <!-- Header -->
         <div class="w-full flex justify-between items-center bg-white/40 dark:bg-black/40 backdrop-blur-md p-4 rounded-3xl shadow-sm mb-4 transition-colors">
             <div class="flex items-center gap-3 transition-opacity duration-300" id="p1-badge">
-                <div class="w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl transition-all" id="p1-badge-icon">
-                    <!-- Icon injected JS -->
-                </div>
+                <div class="w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl transition-all" id="p1-badge-icon"></div>
                 <div>
                     <div class="text-xs font-bold uppercase opacity-75 dark:text-gray-300">Player 1</div>
                     <div class="font-bold text-xl leading-tight truncate max-w-[90px] dark:text-white" id="disp-p1-name">Name</div>
@@ -236,20 +232,15 @@
                     <div class="text-xs font-bold uppercase opacity-75 dark:text-gray-300">Player 2</div>
                     <div class="font-bold text-xl leading-tight truncate max-w-[90px] dark:text-white" id="disp-p2-name">Name</div>
                 </div>
-                <div class="w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl transition-all transform -scale-x-100" id="p2-badge-icon">
-                    <!-- Icon injected JS -->
-                </div>
+                <div class="w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl transition-all transform -scale-x-100" id="p2-badge-icon"></div>
             </div>
         </div>
 
         <!-- Board Wrapper -->
         <div class="relative w-full aspect-square max-w-sm">
-            <!-- Grid -->
-            <div class="grid grid-cols-3 grid-rows-3 w-full h-full bg-white/40 dark:bg-black/20 backdrop-blur-sm rounded-[2rem] shadow-2xl overflow-hidden gap-3 p-4 transition-colors" id="board">
+            <div class="grid grid-cols-3 grid-rows-3 w-full h-full bg-white/40 dark:bg-black/20 backdrop-blur-sm rounded-[2.5rem] shadow-2xl overflow-hidden gap-3 p-4 transition-colors border-4 border-white/20 dark:border-white/5" id="board">
                 <!-- Cells generated by JS -->
             </div>
-            
-            <!-- Scratch Layer -->
             <div id="scratch-layer" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10 filter drop-shadow-md"></div>
         </div>
 
@@ -266,18 +257,18 @@
 
     <!-- WIN MODAL -->
     <div id="win-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop bg-black/40 px-4">
-        <div class="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl p-8 max-w-sm w-full text-center transform scale-90 opacity-0 transition-all duration-300 border border-white/20" id="modal-content">
-            <div class="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl relative overflow-hidden transition-colors" id="modal-icon-container">
+        <div class="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl p-8 max-w-sm w-full text-center transform scale-90 opacity-0 transition-all duration-300 border-4 border-white/50 dark:border-gray-700/50" id="modal-content">
+            <div class="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl relative overflow-hidden transition-colors shadow-inner" id="modal-icon-container">
                 <i class="fas fa-trophy text-yellow-500 relative z-10" id="modal-icon"></i>
             </div>
             <h2 class="text-4xl font-bold text-gray-800 dark:text-white mb-2" id="modal-title">Winner!</h2>
             <p class="text-gray-500 dark:text-gray-400 mb-8 font-medium text-lg" id="modal-msg">Player 1 scratched the board!</p>
             
             <div class="flex flex-col gap-3">
-                <button onclick="closeModal(); resetBoard();" class="w-full py-4 bg-gray-900 dark:bg-blue-600 text-white font-bold rounded-xl hover:bg-gray-700 dark:hover:bg-blue-500 transition-colors shadow-lg text-lg">
+                <button onclick="closeModal(); resetBoard();" class="w-full py-4 bg-gray-900 dark:bg-blue-600 text-white font-bold rounded-2xl hover:bg-gray-700 dark:hover:bg-blue-500 transition-colors shadow-lg text-lg border-b-4 border-gray-950 dark:border-blue-800 active:border-b-0 active:translate-y-1">
                     Play Again
                 </button>
-                <button onclick="closeModal(); toMenu();" class="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-lg">
+                <button onclick="closeModal(); toMenu();" class="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-lg border-b-4 border-gray-300 dark:border-gray-900 active:border-b-0 active:translate-y-1">
                     Back to Menu
                 </button>
             </div>
@@ -297,7 +288,6 @@
             { bg: 'bg-black dark:bg-white', text: 'text-black dark:text-white' }
         ];
 
-        // REMOVED non-cat icons
         const ICONS = ['fa-cat', 'fa-paw'];
 
         const state = {
@@ -333,15 +323,45 @@
             renderCustomizationUI(2);
             renderPlayerSelection(1);
             renderPlayerSelection(2);
+            createFloatingPaws();
             
             // Build Grid
             boardEl.innerHTML = '';
             for (let i = 0; i < 9; i++) {
                 const cell = document.createElement('div');
-                cell.className = 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-2xl flex items-center justify-center cursor-pointer text-5xl shadow-sm cell relative overflow-hidden transition-colors';
+                cell.className = 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-2xl flex items-center justify-center cursor-pointer text-5xl shadow-sm cell relative overflow-hidden transition-colors border-2 border-transparent hover:border-white/40 dark:hover:border-white/10';
                 cell.dataset.index = i;
                 cell.addEventListener('click', () => handleCellClick(i));
                 boardEl.appendChild(cell);
+            }
+        }
+
+        /* --- Floating Paws Animation --- */
+        function createFloatingPaws() {
+            const container = document.getElementById('bg-paws');
+            const pawCount = 12; // Increased count
+            const icons = ['fa-paw'];
+
+            container.innerHTML = ''; // Clear prev
+
+            for (let i = 0; i < pawCount; i++) {
+                const el = document.createElement('i');
+                el.classList.add('fas', 'fa-paw', 'bg-paw');
+                el.style.left = `${Math.random() * 100}%`;
+                
+                // CRITICAL FIX: Use negative delay to ensure they are on screen immediately
+                const duration = 15 + Math.random() * 15;
+                const delay = -Math.random() * duration; 
+                
+                el.style.animationName = 'floatPaw';
+                el.style.animationDuration = `${duration}s`;
+                el.style.animationDelay = `${delay}s`;
+                el.style.animationTimingFunction = 'linear';
+                el.style.animationIterationCount = 'infinite';
+
+                const size = 2 + Math.random() * 3;
+                el.style.fontSize = `${size}rem`;
+                container.appendChild(el);
             }
         }
 
@@ -356,7 +376,6 @@
                 html.classList.remove('dark');
             }
             
-            // Re-render colors in case they rely on dark mode classes
             renderCustomizationUI(1);
             renderCustomizationUI(2);
             renderPlayerSelection(1);
@@ -367,14 +386,12 @@
             const colorContainer = document.getElementById(`p${pNum}-colors`);
             const iconContainer = document.getElementById(`p${pNum}-icons`);
             
-            // Render Colors
             colorContainer.innerHTML = COLORS.map(c => `
                 <button onclick="selectColor(${pNum}, '${c.text}')" 
                     class="w-8 h-8 rounded-full ${c.bg} color-btn p${pNum}-color shadow-sm" 
                     data-color="${c.text}"></button>
             `).join('');
 
-            // Render Icons
             iconContainer.innerHTML = ICONS.map(icon => `
                 <button onclick="selectIcon(${pNum}, '${icon}')" 
                     class="w-10 h-10 rounded-xl flex items-center justify-center icon-btn p${pNum}-icon text-lg" 
@@ -385,37 +402,26 @@
         function renderPlayerSelection(pNum) {
             const playerState = pNum === 1 ? state.p1 : state.p2;
             
-            // Update Colors UI
             document.querySelectorAll(`.p${pNum}-color`).forEach(btn => {
-                if (btn.dataset.color === playerState.colorClass) {
-                    btn.classList.add('selected');
-                } else {
-                    btn.classList.remove('selected');
-                }
+                if (btn.dataset.color === playerState.colorClass) btn.classList.add('selected');
+                else btn.classList.remove('selected');
             });
 
-            // Update Icons UI
             document.querySelectorAll(`.p${pNum}-icon`).forEach(btn => {
-                if (btn.dataset.icon === playerState.iconName) {
-                    btn.classList.add('selected');
-                } else {
-                    btn.classList.remove('selected');
-                }
+                if (btn.dataset.icon === playerState.iconName) btn.classList.add('selected');
+                else btn.classList.remove('selected');
             });
 
-            // Update Preview
             const preview = document.getElementById(`p${pNum}-preview`);
             preview.className = `text-4xl transition-all duration-300 ${playerState.colorClass} ${pNum === 2 ? 'transform -scale-x-100' : ''}`;
             preview.innerHTML = `<i class="fas ${playerState.iconName}"></i>`;
         }
 
-        /* --- Selection Logic --- */
         function selectColor(pNum, colorClass) {
             const currentPlayer = pNum === 1 ? state.p1 : state.p2;
             const otherPlayer = pNum === 1 ? state.p2 : state.p1;
             
             currentPlayer.colorClass = colorClass;
-            // Check Collision
             if (currentPlayer.colorClass === otherPlayer.colorClass && currentPlayer.iconName === otherPlayer.iconName) {
                 otherPlayer.colorClass = getNextAvailableColor(currentPlayer.colorClass);
                 renderPlayerSelection(pNum === 1 ? 2 : 1);
@@ -427,7 +433,6 @@
             const currentPlayer = pNum === 1 ? state.p1 : state.p2;
             const otherPlayer = pNum === 1 ? state.p2 : state.p1;
             currentPlayer.iconName = iconName;
-            // Check Collision
             if (currentPlayer.colorClass === otherPlayer.colorClass && currentPlayer.iconName === otherPlayer.iconName) {
                 otherPlayer.colorClass = getNextAvailableColor(currentPlayer.colorClass);
                 renderPlayerSelection(pNum === 1 ? 2 : 1);
@@ -450,15 +455,15 @@
             const p2Label = document.getElementById('p2-label');
 
             if (mode === 'pvp') {
-                btnPvp.className = "flex-1 py-3 rounded-xl font-bold bg-white dark:bg-gray-700 shadow-sm transition-all text-base dark:text-white";
-                btnAi.className = "flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all text-base";
+                btnPvp.className = "flex-1 py-3 rounded-xl font-bold bg-white dark:bg-gray-700 shadow-sm transition-all text-sm dark:text-white transform active:scale-95";
+                btnAi.className = "flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all text-sm transform active:scale-95";
                 p2Input.style.display = 'block';
                 aiDiff.style.display = 'none';
                 p2Label.innerText = "Player 2";
                 p2Input.value = "Opponent";
             } else {
-                btnAi.className = "flex-1 py-3 rounded-xl font-bold bg-white dark:bg-gray-700 shadow-sm transition-all text-base dark:text-white";
-                btnPvp.className = "flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all text-base";
+                btnAi.className = "flex-1 py-3 rounded-xl font-bold bg-white dark:bg-gray-700 shadow-sm transition-all text-sm dark:text-white transform active:scale-95";
+                btnPvp.className = "flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all text-sm transform active:scale-95";
                 p2Input.style.display = 'none';
                 aiDiff.style.display = 'block';
                 p2Label.innerText = "Bot Lvl";
@@ -466,13 +471,19 @@
             }
         }
 
-        function setTheme(theme) {
+        function setTheme(theme, btnElement) {
             appBody.classList.remove(`theme-${state.theme}`);
             state.theme = theme;
             appBody.classList.add(`theme-${theme}`);
             
-            const buttons = document.querySelectorAll('#setup-screen button[onclick^="setTheme"]');
-            buttons.forEach(btn => btn.classList.remove('ring-2', 'ring-offset-2', 'ring-orange-400', 'ring-gray-500', 'border-white'));
+            // Correct selection logic
+            const allThemeBtns = document.querySelectorAll('.theme-btn');
+            allThemeBtns.forEach(btn => btn.classList.remove('selected'));
+            
+            // Add to clicked
+            if (btnElement) {
+                btnElement.classList.add('selected');
+            }
         }
 
         function startGame() {
@@ -486,18 +497,16 @@
                 state.p2.name = botNames[state.difficulty];
             }
 
-            // Update Game Header
             document.getElementById('disp-p1-name').innerText = state.p1.name;
             document.getElementById('disp-p2-name').innerText = state.p2.name;
 
-            // Set Header Badges
             document.getElementById('p1-badge-icon').className = `w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl ${state.p1.colorClass}`;
             document.getElementById('p1-badge-icon').innerHTML = `<i class="fas ${state.p1.iconName}"></i>`;
 
             document.getElementById('p2-badge-icon').className = `w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-md flex items-center justify-center text-3xl transform -scale-x-100 ${state.p2.colorClass}`;
             document.getElementById('p2-badge-icon').innerHTML = `<i class="fas ${state.p2.iconName}"></i>`;
 
-            setupScreen.classList.add('hidden');
+            document.getElementById('setup-screen').parentElement.classList.add('hidden');
             gameScreen.classList.remove('hidden');
             gameScreen.classList.add('flex');
             
@@ -507,7 +516,7 @@
         function toMenu() {
             gameScreen.classList.add('hidden');
             gameScreen.classList.remove('flex');
-            setupScreen.classList.remove('hidden');
+            document.getElementById('setup-screen').parentElement.classList.remove('hidden');
         }
 
         /* --- Game Logic --- */
@@ -610,18 +619,15 @@
         function drawScratch(combo) {
             const board = document.getElementById('board');
             
-            // 1. Trigger Screen Shake
             board.classList.remove('shake-impact');
-            void board.offsetWidth; // trigger reflow
+            void board.offsetWidth;
             board.classList.add('shake-impact');
 
-            // 2. Add Flash Overlay
             const flash = document.createElement('div');
             flash.className = 'flash-overlay';
             board.parentElement.appendChild(flash);
             setTimeout(() => flash.remove(), 350);
 
-            // 3. Calc Coords for Scratches
             const cell0 = boardEl.children[combo[0]];
             const cell2 = boardEl.children[combo[2]];
             const rect0 = cell0.getBoundingClientRect();
@@ -635,7 +641,6 @@
 
             const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
 
-            // 4. Draw Lines & Spawn Particles
             for(let i=-1; i<=1; i++) {
                 const offset = i * 14; 
                 
@@ -660,14 +665,12 @@
                 const dx = (endX - startX) / segmentCount;
                 const dy = (endY - startY) / segmentCount;
 
-                // Create Jagged Path
                 for (let j = 1; j < segmentCount; j++) {
                     const jitter = (Math.random() - 0.5) * 8;
                     const currX = startX + dx * j + jitter;
                     const currY = startY + dy * j + jitter;
                     d += ` L ${currX} ${currY}`;
                     
-                    // Spawn Particles along the path
                     if (Math.random() > 0.3) {
                         spawnParticle(currX, currY, angle);
                     }
@@ -677,7 +680,6 @@
                 path.setAttribute("d", d);
                 path.setAttribute("stroke-width", Math.random() * 2 + 3);
                 path.setAttribute("class", "scratch-path");
-                // Stagger timing very slightly
                 path.style.animationDelay = `${Math.abs(i) * 30}ms`;
 
                 svg.appendChild(path);
@@ -689,29 +691,24 @@
             const p = document.createElement('div');
             p.className = 'particle';
             
-            // Random size
             const size = Math.random() * 4 + 2;
             p.style.width = `${size}px`;
             p.style.height = `${size}px`;
             p.style.left = `${x}px`;
             p.style.top = `${y}px`;
 
-            // Calculate velocity: Perpendicular to scratch + random spread
             const perpAngle = angleDeg + 90 + (Math.random() * 60 - 30); 
-            const speed = Math.random() * 100 + 50; // Distance to fly
+            const speed = Math.random() * 100 + 50; 
             
             const rad = perpAngle * Math.PI / 180;
             const destX = Math.cos(rad) * speed;
             const destY = Math.sin(rad) * speed;
-
-            // Random rotation for the particle itself
             const rot = Math.random() * 360;
 
             p.style.transition = 'all 0.5s ease-out';
             
             scratchLayer.appendChild(p);
 
-            // Trigger animation in next frame
             requestAnimationFrame(() => {
                 p.style.transform = `translate(${destX}px, ${destY}px) rotate(${rot}deg)`;
                 p.style.opacity = '1';
