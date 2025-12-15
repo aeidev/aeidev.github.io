@@ -1,5 +1,636 @@
-<body style="height: 100%;">
-    <div style="display: flex;flex-direction: column;align-items: center;justify-content: center;height: 100%;">
-        <img src="1.png" alt="cat" height="200" width="200"/>
+import React, { useState, useEffect, useCallback } from 'react';
+import { Cat, PawPrint, RotateCcw, Trophy, Trash2, LogOut, Play, User, Bot, Check, Ban } from 'lucide-react';
+
+// --- THEME CONFIGURATION ---
+const THEMES = {
+  orange: { 
+    id: 'orange', 
+    name: 'Ginger', 
+    fill: 'fill-orange-400', 
+    stroke: 'stroke-orange-700', 
+    text: 'text-orange-600', 
+    bg: 'bg-orange-100', 
+    ring: 'ring-orange-200',
+    border: 'border-orange-200',
+    preview: 'bg-orange-400',
+    slash: 'stroke-orange-500' 
+  },
+  black: { 
+    id: 'black', 
+    name: 'Midnight', 
+    fill: 'fill-slate-700', 
+    stroke: 'stroke-slate-900', 
+    text: 'text-slate-700', 
+    bg: 'bg-slate-200', 
+    ring: 'ring-slate-300',
+    border: 'border-slate-200',
+    preview: 'bg-slate-700',
+    slash: 'stroke-slate-700'
+  },
+  grey: { 
+    id: 'grey', 
+    name: 'Smokey', 
+    fill: 'fill-gray-400', 
+    stroke: 'stroke-gray-600', 
+    text: 'text-gray-600', 
+    bg: 'bg-gray-100', 
+    ring: 'ring-gray-200',
+    border: 'border-gray-200',
+    preview: 'bg-gray-400',
+    slash: 'stroke-gray-500'
+  },
+  white: { 
+    id: 'white', 
+    name: 'Snowball', 
+    fill: 'fill-white', 
+    stroke: 'stroke-stone-400', 
+    text: 'text-stone-500', 
+    bg: 'bg-stone-100', 
+    ring: 'ring-stone-200',
+    border: 'border-stone-200',
+    preview: 'bg-stone-100 border-2 border-stone-300',
+    slash: 'stroke-stone-400'
+  },
+  cream: { 
+    id: 'cream', 
+    name: 'Cream', 
+    fill: 'fill-yellow-200', 
+    stroke: 'stroke-yellow-600', 
+    text: 'text-yellow-600', 
+    bg: 'bg-yellow-50', 
+    ring: 'ring-yellow-200',
+    border: 'border-yellow-200',
+    preview: 'bg-yellow-200',
+    slash: 'stroke-yellow-500'
+  }
+};
+
+const CatTicTacToe = () => {
+  // Game State
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameMode, setGameMode] = useState('pvp'); // 'pvp' or 'ai'
+  
+  // Player Settings
+  const [p1Name, setP1Name] = useState('');
+  const [p2Name, setP2Name] = useState('');
+  const [p1ThemeId, setP1ThemeId] = useState('orange');
+  const [p2ThemeId, setP2ThemeId] = useState('black');
+
+  // Board State
+  const [board, setBoard] = useState(Array(9).fill(null));
+  const [isP1Next, setIsP1Next] = useState(true);
+  const [scores, setScores] = useState({ p1: 0, p2: 0 });
+  const [winner, setWinner] = useState(null); // 'p1' or 'p2'
+  const [winningLine, setWinningLine] = useState([]);
+  const [isDraw, setIsDraw] = useState(false);
+  
+  // Modal State
+  const [showWinnerModal, setShowWinnerModal] = useState(false);
+
+  // Helper to get current theme objects
+  const p1Theme = THEMES[p1ThemeId];
+  const p2Theme = THEMES[p2ThemeId];
+  const activeTheme = isP1Next ? p1Theme : p2Theme;
+
+  // Derived Names
+  const player1 = p1Name.trim() || p1Theme.name;
+  const player2 = gameMode === 'ai' ? 'Robo-Cat' : (p2Name.trim() || p2Theme.name);
+
+  // Win Logic
+  const checkWinner = useCallback((squares) => {
+    const lines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+      [0, 4, 8], [2, 4, 6]             // diagonals
+    ];
+
+    for (let i = 0; i < lines.length; i++) {
+      const [a, b, c] = lines[i];
+      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+        return { winner: squares[a], line: lines[i] };
+      }
+    }
+    return null;
+  }, []);
+
+  const handleGameEnd = (result, currentBoard) => {
+    if (result) {
+      setWinner(result.winner);
+      setWinningLine(result.line);
+      setScores(prev => ({
+        ...prev,
+        [result.winner]: prev[result.winner] + 1
+      }));
+    } else if (!currentBoard.includes(null)) {
+      setIsDraw(true);
+    } else {
+      setIsP1Next(prev => !prev);
+    }
+  };
+
+  const handleClick = useCallback((index) => {
+    if (board[index] || winner || isDraw) return;
+
+    // Prevent human from clicking during AI turn
+    if (gameMode === 'ai' && !isP1Next) return;
+
+    const newBoard = [...board];
+    newBoard[index] = isP1Next ? 'p1' : 'p2';
+    setBoard(newBoard);
+
+    const result = checkWinner(newBoard);
+    handleGameEnd(result, newBoard);
+  }, [board, winner, isDraw, isP1Next, gameMode, checkWinner]);
+
+  // AI Logic
+  useEffect(() => {
+    if (gameMode === 'ai' && !isP1Next && !winner && !isDraw) {
+      const timer = setTimeout(() => {
+        const makeAiMove = () => {
+          // 1. Try to win
+          for (let i = 0; i < 9; i++) {
+            if (!board[i]) {
+              const testBoard = [...board];
+              testBoard[i] = 'p2';
+              if (checkWinner(testBoard)) return i;
+            }
+          }
+
+          // 2. Block opponent
+          for (let i = 0; i < 9; i++) {
+            if (!board[i]) {
+              const testBoard = [...board];
+              testBoard[i] = 'p1';
+              if (checkWinner(testBoard)) return i;
+            }
+          }
+
+          // 3. Take center
+          if (!board[4]) return 4;
+
+          // 4. Random available move
+          const available = board.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+          return available[Math.floor(Math.random() * available.length)];
+        };
+
+        const aiMoveIndex = makeAiMove();
+        
+        const newBoard = [...board];
+        newBoard[aiMoveIndex] = 'p2';
+        setBoard(newBoard);
+
+        const result = checkWinner(newBoard);
+        handleGameEnd(result, newBoard);
+      }, 600); // Delay for "thinking" effect
+
+      return () => clearTimeout(timer);
+    }
+  }, [isP1Next, gameMode, winner, isDraw, board, checkWinner]);
+
+  // Modal Delay Logic
+  useEffect(() => {
+    if (winner) {
+      const timer = setTimeout(() => {
+        setShowWinnerModal(true);
+      }, 1500); // Wait for scratch to finish
+      return () => clearTimeout(timer);
+    } else if (isDraw) {
+      const timer = setTimeout(() => {
+        setShowWinnerModal(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setShowWinnerModal(false);
+    }
+  }, [winner, isDraw]);
+
+  const resetGame = () => {
+    setBoard(Array(9).fill(null));
+    setWinner(null);
+    setWinningLine([]);
+    setIsDraw(false);
+    setIsP1Next(true);
+  };
+
+  const resetScores = () => {
+    resetGame();
+    setScores({ p1: 0, p2: 0 });
+  };
+
+  const exitGame = () => {
+    setGameStarted(false);
+    resetScores();
+    setP1Name('');
+    setP2Name('');
+  };
+
+  const startGame = (e) => {
+    e.preventDefault();
+    setGameStarted(true);
+  };
+
+  const BackgroundPaw = ({ style }) => (
+    <div className={`absolute opacity-20 pointer-events-none animate-pulse ${p1Theme.text}`} style={style}>
+      <PawPrint size={48} />
     </div>
-</body>
+  );
+
+  const ThemeSelector = ({ selectedId, onSelect, disabledId }) => (
+    <div className="flex gap-2 mt-2">
+      {Object.values(THEMES).map((theme) => {
+        const isDisabled = theme.id === disabledId;
+        return (
+          <button
+            key={theme.id}
+            type="button"
+            onClick={() => !isDisabled && onSelect(theme.id)}
+            disabled={isDisabled}
+            className={`
+              w-8 h-8 rounded-full transition-transform flex items-center justify-center 
+              ${theme.preview} 
+              ${selectedId === theme.id ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}
+              ${isDisabled ? 'opacity-20 cursor-not-allowed ring-2 ring-gray-200 grayscale' : 'hover:scale-110 cursor-pointer'}
+            `}
+            title={isDisabled ? `${theme.name} (Taken)` : theme.name}
+          >
+            {selectedId === theme.id && <Check size={14} className={theme.id === 'white' || theme.id === 'cream' ? 'text-stone-500' : 'text-white'} />}
+            {isDisabled && selectedId !== theme.id && <Ban size={14} className="text-gray-500 absolute" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  // Component for the winning slash animation (PARALLEL & CRISP)
+  const WinningSlash = ({ line, winnerId }) => {
+    if (!line || line.length !== 3 || !winnerId) return null;
+
+    const winnerTheme = THEMES[winnerId === 'p1' ? p1ThemeId : p2ThemeId];
+    
+    // Grid Logic (0-100 Coordinate System)
+    const startIdx = line[0];
+    const endIdx = line[2];
+    
+    const getPos = (idx) => {
+      const row = Math.floor(idx / 3);
+      const col = idx % 3;
+      // Centers are at 16.66, 50, 83.33 in a 0-100 system
+      return { x: (col * 33.33) + 16.66, y: (row * 33.33) + 16.66 };
+    };
+
+    const start = getPos(startIdx);
+    const end = getPos(endIdx);
+    
+    // Angle of the winning line
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+    // Distance between first and last cell center
+    const dist = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+    
+    // Midpoint of the entire line
+    const cx = (start.x + end.x) / 2;
+    const cy = (start.y + end.y) / 2;
+    
+    // Extend the line beyond the grid cells
+    const extension = 35; 
+    
+    // Generate 3 claw paths
+    const paths = [-1, 0, 1].map(i => {
+       // Spacing between claws
+       const spacing = 3.5; 
+       
+       // NO SPLAY - keep them parallel
+       const drawAngle = angle;
+       
+       // Middle claw is slightly longer
+       const lenMod = i === 0 ? 1 : 0.95; 
+       const totalLen = (dist + (extension * 2)) * lenMod;
+
+       const perpAngle = angle + Math.PI / 2;
+       
+       // Offset from center perpendicular to slash direction
+       const offsetX = Math.cos(perpAngle) * (spacing * i);
+       const offsetY = Math.sin(perpAngle) * (spacing * i);
+       
+       // Calculate start and end points of this specific claw mark
+       const sx = cx - (Math.cos(drawAngle) * totalLen / 2) + offsetX;
+       const sy = cy - (Math.sin(drawAngle) * totalLen / 2) + offsetY;
+       
+       const ex = cx + (Math.cos(drawAngle) * totalLen / 2) + offsetX;
+       const ey = cy + (Math.sin(drawAngle) * totalLen / 2) + offsetY;
+
+       // Bezier curve control point for a VERY slight arc (almost straight)
+       const curveAmp = 1.5; 
+       const midX = (sx + ex) / 2 + Math.cos(perpAngle) * curveAmp;
+       const midY = (sy + ey) / 2 + Math.sin(perpAngle) * curveAmp;
+
+       return (
+         <path 
+            key={i}
+            d={`M ${sx},${sy} Q ${midX},${midY} ${ex},${ey}`}
+            className={`${winnerTheme.slash} animate-scratch`}
+            strokeWidth={i === 0 ? "1" : "0.6"} // Thin and crisp
+            fill="none"
+            strokeLinecap="round"
+            style={{ 
+                animationDelay: `${Math.abs(i) * 0.05}s` 
+            }}
+         />
+       );
+    });
+
+    return (
+      <svg 
+        viewBox="0 0 100 100" 
+        preserveAspectRatio="none" 
+        className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible"
+      >
+        <defs>
+          {/* Finer noise for a crisp scratch texture */}
+          <filter id="scratchTexture" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.5" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+        <g filter="url(#scratchTexture)">
+          {paths}
+        </g>
+      </svg>
+    );
+  };
+
+  // --- START SCREEN ---
+  if (!gameStarted) {
+    return (
+      <div className={`min-h-screen flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden bg-gradient-to-br from-gray-50 to-stone-100`}>
+        {/* Static background paws */}
+        <div className="absolute top-[10%] left-[10%] rotate-[-12deg] text-orange-200 opacity-40"><PawPrint size={48}/></div>
+        <div className="absolute top-[20%] right-[15%] rotate-[15deg] text-slate-200 opacity-40"><PawPrint size={48}/></div>
+        <div className="absolute bottom-[15%] left-[20%] rotate-[-5deg] text-gray-200 opacity-40"><PawPrint size={48}/></div>
+        <div className="absolute bottom-[10%] right-[10%] rotate-[10deg] text-stone-200 opacity-40"><PawPrint size={48}/></div>
+
+        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full z-10 animate-fade-in ring-8 ring-stone-100">
+          <div className="text-center mb-6">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-3">
+              <Cat className="fill-orange-400 stroke-orange-700" size={40} />
+              Tic-Cat-Toe
+            </h1>
+            <p className="text-gray-500">Customize your cats!</p>
+          </div>
+
+          {/* Game Mode Selection */}
+          <div className="flex gap-4 mb-6">
+            <button
+              type="button"
+              onClick={() => setGameMode('pvp')}
+              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex flex-col items-center gap-2 border-2 ${gameMode === 'pvp' ? 'bg-orange-50 border-orange-400 text-orange-700' : 'bg-white border-gray-200 text-gray-400 hover:border-orange-200'}`}
+            >
+              <div className="flex gap-1"><User size={20}/><User size={20}/></div>
+              2 Players
+            </button>
+            <button
+              type="button"
+              onClick={() => setGameMode('ai')}
+              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex flex-col items-center gap-2 border-2 ${gameMode === 'ai' ? 'bg-slate-50 border-slate-400 text-slate-700' : 'bg-white border-gray-200 text-gray-400 hover:border-slate-200'}`}
+            >
+              <div className="flex gap-1"><User size={20}/><Bot size={20}/></div>
+              vs Robo-Cat
+            </button>
+          </div>
+
+          <form onSubmit={startGame} className="space-y-6">
+            {/* Player 1 Settings */}
+            <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 transition-colors`}>
+              <label className="block text-sm font-bold text-gray-600 mb-2">PLAYER 1 (You)</label>
+              <div className="relative flex items-center mb-3">
+                <Cat className={`absolute left-3 ${THEMES[p1ThemeId].text}`} size={24} />
+                <input
+                  type="text"
+                  placeholder={THEMES[p1ThemeId].name}
+                  value={p1Name}
+                  onChange={(e) => setP1Name(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:border-orange-400 focus:outline-none transition-colors text-gray-700 font-medium"
+                  maxLength={10}
+                />
+              </div>
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Choose Color</span>
+              <ThemeSelector selectedId={p1ThemeId} onSelect={setP1ThemeId} disabledId={p2ThemeId} />
+            </div>
+
+            {/* Player 2 Settings */}
+            <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 transition-colors`}>
+              <label className="block text-sm font-bold text-gray-600 mb-2">
+                {gameMode === 'ai' ? 'PLAYER 2 (AI)' : 'PLAYER 2 (Opponent)'}
+              </label>
+              <div className="relative flex items-center mb-3">
+                {gameMode === 'ai' ? 
+                  <Bot className={`absolute left-3 ${THEMES[p2ThemeId].text}`} size={24} /> : 
+                  <Cat className={`absolute left-3 ${THEMES[p2ThemeId].text}`} size={24} />
+                }
+                <input
+                  type="text"
+                  placeholder={THEMES[p2ThemeId].name}
+                  value={gameMode === 'ai' ? "Robo-Cat" : p2Name}
+                  onChange={(e) => gameMode !== 'ai' && setP2Name(e.target.value)}
+                  disabled={gameMode === 'ai'}
+                  className={`w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:border-slate-400 focus:outline-none transition-colors text-gray-700 font-medium ${gameMode === 'ai' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                  maxLength={10}
+                />
+              </div>
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Choose Color</span>
+              <ThemeSelector selectedId={p2ThemeId} onSelect={setP2ThemeId} disabledId={p1ThemeId} />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-4 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4"
+            >
+              Start Game
+              <Play size={20} fill="currentColor" />
+            </button>
+          </form>
+        </div>
+        <style>{`
+          @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+          .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+        `}</style>
+      </div>
+    );
+  }
+
+  // --- GAME SCREEN ---
+  return (
+    <div className={`min-h-screen bg-gradient-to-br from-white to-gray-100 flex flex-col items-center justify-center p-4 font-sans relative overflow-hidden select-none`}>
+      
+      <BackgroundPaw style={{ top: '10%', left: '10%', transform: 'rotate(-12deg)' }} />
+      <BackgroundPaw style={{ top: '20%', right: '15%', transform: 'rotate(15deg)' }} />
+      <BackgroundPaw style={{ bottom: '15%', left: '20%', transform: 'rotate(-5deg)' }} />
+      <BackgroundPaw style={{ bottom: '10%', right: '10%', transform: 'rotate(10deg)' }} />
+
+      <div className="z-10 text-center mb-6">
+         <div className="absolute top-4 left-4">
+          <button onClick={exitGame} className="p-2 bg-white rounded-full shadow-sm text-gray-400 hover:text-red-500 transition-colors" title="Change Players">
+            <LogOut size={20} />
+          </button>
+        </div>
+
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2 flex flex-wrap items-center justify-center gap-2 sm:gap-4 drop-shadow-sm px-4">
+          <span className={`${p1Theme.text} truncate max-w-[150px]`}>{player1}</span>
+          <span className="text-gray-400 text-xl">vs</span>
+          <span className={`${p2Theme.text} truncate max-w-[150px]`}>{player2}</span>
+        </h1>
+      </div>
+
+      <div className="flex gap-4 mb-8 w-full max-w-sm justify-between z-10 px-2">
+        {/* P1 Score */}
+        <div className={`flex-1 rounded-2xl p-4 flex flex-col items-center shadow-lg transition-all duration-300 ${isP1Next && !winner && !isDraw ? `${p1Theme.bg} scale-105 ring-4 ${p1Theme.ring}` : 'bg-white'}`}>
+          <Cat className={`mb-2 ${isP1Next ? p1Theme.text : 'text-gray-300'}`} size={32} />
+          <span className="text-gray-500 font-bold text-xs uppercase tracking-wider truncate w-full text-center">{player1}</span>
+          <span className={`text-3xl font-black ${p1Theme.text}`}>{scores.p1}</span>
+        </div>
+        
+        {/* P2 Score */}
+        <div className={`flex-1 rounded-2xl p-4 flex flex-col items-center shadow-lg transition-all duration-300 ${!isP1Next && !winner && !isDraw ? `${p2Theme.bg} scale-105 ring-4 ${p2Theme.ring}` : 'bg-white'}`}>
+          {gameMode === 'ai' ? 
+            <Bot className={`mb-2 ${!isP1Next ? p2Theme.text : 'text-gray-300'}`} size={32} /> : 
+            <Cat className={`mb-2 ${!isP1Next ? p2Theme.text : 'text-gray-300'}`} size={32} />
+          }
+          <span className="text-gray-500 font-bold text-xs uppercase tracking-wider truncate w-full text-center">{player2}</span>
+          <span className={`text-3xl font-black ${p2Theme.text}`}>{scores.p2}</span>
+        </div>
+      </div>
+
+      {/* Board */}
+      <div className={`relative z-10 bg-white p-4 rounded-3xl shadow-xl ring-8 ${activeTheme.ring} transition-all duration-500`}>
+        <div className="grid grid-cols-3 gap-3">
+          {board.map((square, index) => {
+            const isWinningSquare = winningLine.includes(index);
+            const cellTheme = square === 'p1' ? p1Theme : (square === 'p2' ? p2Theme : null);
+
+            return (
+              <button
+                key={index}
+                onClick={() => handleClick(index)}
+                disabled={!!square || !!winner || (gameMode === 'ai' && !isP1Next)}
+                className={`
+                  w-20 h-20 sm:w-24 sm:h-24 rounded-xl flex items-center justify-center text-4xl
+                  transition-all duration-200 transform hover:scale-105 active:scale-95
+                  ${!square && !winner ? (gameMode === 'ai' && !isP1Next ? 'cursor-wait' : 'hover:bg-gray-50 cursor-pointer') : ''}
+                  ${isWinningSquare ? 'bg-yellow-100 ring-4 ring-yellow-300 scale-110 z-10' : 'bg-gray-50'}
+                `}
+              >
+                {square && (
+                  <div className={square === 'p1' ? 'animate-bounce-short' : 'animate-pop-in'}>
+                    <PawPrint 
+                      size={52} 
+                      className={`${cellTheme.fill} ${cellTheme.stroke} ${square === 'p2' ? 'transform rotate-12 scale-x-[-1]' : 'transform -rotate-12'}`} 
+                      strokeWidth={2} 
+                    />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        
+        {/* Winning Slash Effect */}
+        <WinningSlash line={winningLine} winnerId={winner} />
+
+        {showWinnerModal && (winner || isDraw) && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-3xl flex flex-col items-center justify-center p-6 text-center animate-fade-in z-30">
+            {winner ? (
+              <>
+                <Trophy className="text-yellow-400 mb-4 animate-bounce" size={48} />
+                <h2 className="text-3xl font-black text-gray-800 mb-2 truncate w-full">
+                  {winner === 'p1' ? `${player1} Wins!` : `${player2} Wins!`}
+                </h2>
+                <div className="mb-6">
+                   <Cat 
+                     size={64} 
+                     className={`${THEMES[winner === 'p1' ? p1ThemeId : p2ThemeId].fill} ${THEMES[winner === 'p1' ? p1ThemeId : p2ThemeId].stroke} mx-auto`} 
+                   />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex gap-2 mb-4 justify-center">
+                  <PawPrint className={`${p1Theme.text} transform -rotate-12`} size={32} />
+                  <PawPrint className={`${p2Theme.text} transform rotate-12 scale-x-[-1]`} size={32} />
+                </div>
+                <h2 className="text-3xl font-black text-gray-800 mb-2">It's a Draw!</h2>
+                <p className="text-gray-500 mb-6">Too much scratching!</p>
+              </>
+            )}
+            
+            <button
+              onClick={resetGame}
+              className="px-8 py-3 bg-gray-900 text-white rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+            >
+              <RotateCcw size={20} />
+              Play Again
+            </button>
+          </div>
+        )}
+      </div>
+
+      {!winner && !isDraw && (
+        <div className={`mt-8 z-10 flex items-center gap-3 bg-white px-6 py-2 rounded-full shadow-sm text-gray-600 font-medium animate-fade-in border border-gray-100 ring-2 ${activeTheme.ring}`}>
+          {isP1Next ? (
+            <>
+              <Cat size={20} className={p1Theme.text} />
+              <span className={`${p1Theme.text} truncate max-w-[150px]`}>{player1}'s Turn</span>
+            </>
+          ) : (
+            <>
+              {gameMode === 'ai' ? <Bot size={20} className={p2Theme.text}/> : <Cat size={20} className={p2Theme.text} />}
+              <span className={`${p2Theme.text} truncate max-w-[150px]`}>{player2}'s Turn</span>
+            </>
+          )}
+        </div>
+      )}
+
+      <button 
+        onClick={resetScores}
+        className="mt-6 z-10 flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors text-sm font-semibold py-2 px-4 rounded-lg hover:bg-red-50"
+      >
+        <Trash2 size={16} />
+        Reset Scores
+      </button>
+
+      <style>{`
+        @keyframes bounce-short {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes pop-in {
+          0% { transform: scale(0.5); opacity: 0; }
+          70% { transform: scale(1.2); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fade-in {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes scratch {
+          from { stroke-dashoffset: 200; }
+          to { stroke-dashoffset: 0; }
+        }
+        .animate-bounce-short {
+          animation: bounce-short 0.4s ease-out;
+        }
+        .animate-pop-in {
+          animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
+        .animate-scratch {
+          stroke-dasharray: 200;
+          stroke-dashoffset: 200;
+          animation: scratch 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default CatTicTacToe;
